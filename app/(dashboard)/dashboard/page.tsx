@@ -8,6 +8,8 @@ import Link from "next/link";
 export default function Dashboard() {
   const [videoList, setVideoList] = useState([]);
 
+  setVideoList([]);
+
   return (
     <div className="pt-4 pb-6 px-4 mx-auto">
       <div className="flex justify-between items-center mb-4">

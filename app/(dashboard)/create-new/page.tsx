@@ -66,6 +66,7 @@ export default function CreateNew() {
         setVideoScript(response.data.result);
         console.log(videoScript)
       });
+      console.log(result);
     } catch (error) {
       console.error("Error generating video script:", error);
     } finally {
