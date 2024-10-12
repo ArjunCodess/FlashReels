@@ -74,7 +74,7 @@ export default function CreateNew() {
   };
 
   return (
-    <div className="py-4 px-8 mx-auto">
+    <div className="pt-4 pb-8 px-8 mx-auto">
       <h1 className="text-2xl font-bold mt-2 mb-4">Create New</h1>
 
       <div className="space-y-8">

@@ -40,7 +40,9 @@ export default function SelectTopic({
           value={selectedOption}
           onValueChange={(value) => {
             setSelectedOption(value);
-            value != options[0] && onUserSelect("topic", value);
+            if (value !== options[0]) {
+              onUserSelect("topic", value);
+            }
           }}
         >
           <SelectTrigger className={error ? "border-red-500" : ""}>

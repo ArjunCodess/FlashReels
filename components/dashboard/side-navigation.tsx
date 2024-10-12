@@ -15,7 +15,7 @@ export default function SideNavigation() {
   ];
 
   return (
-    <nav className="h-screen shadow-md p-5 flex flex-col">
+    <nav className="h-[80vh] md:h-[60vh] shadow-md p-5 flex flex-col">
       <ul className="space-y-2">
         {options.map((option) => (
           <li key={option.id}>

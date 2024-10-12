@@ -10,7 +10,7 @@ export async function POST(req: Request) {
         console.log(result.response.text());
 
         return NextResponse.json({ 'result': JSON.parse(result.response.text()), })
-    } catch (error: any) {
+    } catch (error) {
         return NextResponse.json({ 'error': error })
     }
 }

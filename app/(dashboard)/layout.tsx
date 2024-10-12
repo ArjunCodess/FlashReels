@@ -1,4 +1,3 @@
-import Header from "@/components/dashboard/header";
 import SideNavigation from "@/components/dashboard/side-navigation";
 import type { Metadata } from "next";
 

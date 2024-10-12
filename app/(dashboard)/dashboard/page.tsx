@@ -9,7 +9,7 @@ export default function Dashboard() {
   const [videoList, setVideoList] = useState([]);
 
   return (
-    <div className="py-4 px-8 mx-auto">
+    <div className="pt-4 pb-6 px-4 mx-auto">
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold">Dashboard</h1>
         <Button>
@@ -19,8 +19,8 @@ export default function Dashboard() {
       {videoList.length == 0 ? (
         <Card className="border-2 border-dashed">
           <CardContent className="flex flex-col items-center justify-center min-h-[300px] text-center p-6">
-            <p className="text-lg text-gray-500 mb-4">
-              You don't have any short video created
+            <p className="text-lg text-neutral-500 mb-4">
+              You don&apos;t have any short video created
             </p>
             <Button>
               <Link href="create-new">Create New</Link>
