@@ -1,0 +1,1 @@
+type OnUserSelectType = (fieldName: string, fieldValue: string) => void;

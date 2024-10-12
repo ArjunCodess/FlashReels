@@ -35,7 +35,7 @@ export default function Provider({
             })
     }
 
-    return <div>
+    return <div className='px-2'>
         {children}
     </div>
 }
