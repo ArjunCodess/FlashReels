@@ -12,8 +12,10 @@ import { Textarea } from "@/components/ui/textarea";
 
 export default function SelectTopic({
   onUserSelect,
+  error,
 }: {
   onUserSelect: (fieldName: string, fieldValue: string) => void;
+  error: boolean;
 }) {
   const [selectedOption, setSelectedOption] = useState("");
 
@@ -41,7 +43,7 @@ export default function SelectTopic({
             value != options[0] && onUserSelect("topic", value);
           }}
         >
-          <SelectTrigger>
+          <SelectTrigger className={error ? "border-red-500" : ""}>
             <SelectValue placeholder="Select Topic" />
           </SelectTrigger>
           <SelectContent>
@@ -52,13 +54,16 @@ export default function SelectTopic({
             ))}
           </SelectContent>
         </Select>
+        {error && (
+          <p className="text-red-500 text-sm mt-1">Please select a topic</p>
+        )}
       </div>
 
       <div>
         {selectedOption === options[0] && (
           <Textarea
             placeholder="Enter your custom prompt here"
-            className="mt-2"
+            className={`mt-2 ${error ? "border-red-500" : ""}`}
             onChange={(e) => onUserSelect("topic", e.target.value)}
           />
         )}

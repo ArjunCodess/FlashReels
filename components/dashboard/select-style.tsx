@@ -11,8 +11,10 @@ import {
 
 export default function SelectStyle({
   onUserSelect,
+  error,
 }: {
   onUserSelect: (fieldName: string, fieldValue: string) => void;
+  error: boolean;
 }) {
   const [selectedOption, setSelectedOption] = useState("");
 
@@ -31,7 +33,7 @@ export default function SelectStyle({
           onUserSelect("imageStyle", value);
         }}
       >
-        <SelectTrigger>
+        <SelectTrigger className={error ? "border-red-500" : ""}>
           <SelectValue placeholder="Select Style" />
         </SelectTrigger>
         <SelectContent>
@@ -42,6 +44,9 @@ export default function SelectStyle({
           ))}
         </SelectContent>
       </Select>
+      {error && (
+        <p className="text-red-500 text-sm mt-1">Please select a style</p>
+      )}
     </div>
   );
 }
