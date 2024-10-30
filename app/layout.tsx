@@ -7,12 +7,6 @@ import { ThemeProvider } from "@/providers/theme-provider";
 import Header from "@/components/header";
 import Script from "next/script";
 
-<Script
-  defer
-  data-domain="flashreels.vercel.app"
-  src="https://getanalyzr.vercel.app/tracking-script.js"
-/>
-
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
   variable: "--font-geist-sans",
@@ -40,6 +34,16 @@ export default function RootLayout({
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased mx-auto max-w-7xl`}
         >
+          <Script
+            defer
+            data-domain="flashreels.vercel.app"
+            src="https://getanalyzr.vercel.app/tracking-script.js"
+          />
+          <Script
+            defer
+            data-domain="flashreels.vercel.app"
+            src="https://monitoryour.website/tracking-script.js"
+          />
           <ThemeProvider
             attribute="class"
             defaultTheme="system"
