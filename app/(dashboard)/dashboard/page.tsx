@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
@@ -8,7 +8,9 @@ import Link from "next/link";
 export default function Dashboard() {
   const [videoList, setVideoList] = useState([]);
 
-  setVideoList([]);
+  useEffect(() => {
+    setVideoList([]);
+  }, []);
 
   return (
     <div className="pt-4 pb-6 px-4 mx-auto">

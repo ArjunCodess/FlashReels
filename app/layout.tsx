@@ -5,6 +5,13 @@ import Provider from "@/providers/provider";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ThemeProvider } from "@/providers/theme-provider";
 import Header from "@/components/header";
+import Script from "next/script";
+
+<Script
+  defer
+  data-domain="flashreels.vercel.app"
+  src="https://getanalyzr.vercel.app/tracking-script.js"
+/>
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
