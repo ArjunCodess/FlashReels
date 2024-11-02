@@ -39,11 +39,6 @@ export default function RootLayout({
             data-domain="flashreels.vercel.app"
             src="https://getanalyzr.vercel.app/tracking-script.js"
           />
-          <Script
-            defer
-            data-domain="flashreels.vercel.app"
-            src="https://monitoryour.website/tracking-script.js"
-          />
           <ThemeProvider
             attribute="class"
             defaultTheme="system"
