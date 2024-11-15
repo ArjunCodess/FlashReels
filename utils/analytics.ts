@@ -3,7 +3,21 @@ import axios from 'axios';
 const API_KEY = "g0f7ey4mw4wkwobkpumjk";
 const API_URL = "https://getanalyzr.vercel.app/api/events";
 
-export const sendAnalyticsEvent = async (name: string, description?: string) => {
+export const sendAnalyticsEvent = async ({
+    name,
+    description,
+    emoji = '🔔',
+    fields = []
+}: {
+    name: string;
+    description: string;
+    emoji?: string;
+    fields?: Array<{
+        name: string;
+        value: string;
+        inline?: boolean;
+    }>;
+}) => {
     const headers = {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${API_KEY}`
@@ -12,7 +26,9 @@ export const sendAnalyticsEvent = async (name: string, description?: string) => 
     const eventData = {
         name,
         domain: window.location.hostname,
-        description
+        description,
+        emoji,
+        fields
     };
 
     try {
@@ -20,9 +36,9 @@ export const sendAnalyticsEvent = async (name: string, description?: string) => 
         console.log("Event sent successfully", response.data);
     } catch (error: unknown) {
         if (axios.isAxiosError(error)) {
-            console.error("Error: ", error.response?.data ?? error.message);
+            console.error("Error:", error.response?.data ?? error.message);
         } else {
-            console.error("Error: ", error);
+            console.error("Error:", error);
         }
     }
 };
