@@ -20,7 +20,8 @@ export default function CreateNew() {
     imageStyle: false,
   });
   const [loading, setLoading] = useState(false);
-  const [videoScript, setVideoScript] = useState()
+  const [, setVideoScript] = useState();
+  const [audioGenerating, setAudioGenerating] = useState(false);
 
   const debouncedInputValue = useDebounce(inputValue, 500);
 
@@ -62,11 +63,25 @@ export default function CreateNew() {
     const prompt = `Generate a ${formData.duration || "30"}-second video script on the topic: "${formData.topic}". For each scene, provide an AI-generated image prompt in the "${formData.imageStyle}" style. Return the result in JSON format with "imagePrompt" and "contentText" as fields. No plain text output.`;
 
     try {
-      const result = await axios.post('/api/get-video-script', { prompt }).then(response => {
-        setVideoScript(response.data.result);
-        console.log(videoScript)
-      });
-      console.log(result);
+      const result = await axios.post('/api/get-video-script', { prompt });
+      const scriptData = result.data.result;
+      setVideoScript(scriptData);
+      
+      // Generate audio after getting the script
+      setAudioGenerating(true);
+      try {
+        const audioResponse = await axios.post('/api/generate-audio', {
+          scenes: scriptData
+        });
+        if (audioResponse.data.success) {
+          console.log('Audio uploaded to:', audioResponse.data.audioUrl);
+        }
+      } catch (error) {
+        console.error('Error generating audio:', error);
+      } finally {
+        setAudioGenerating(false);
+      }
+      
     } catch (error) {
       console.error("Error generating video script:", error);
     } finally {
@@ -88,7 +103,7 @@ export default function CreateNew() {
         Create
       </Button>
 
-      <CustomLoader loading={loading} />
+      <CustomLoader loading={loading || audioGenerating} />
     </div>
   );
 }
