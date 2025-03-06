@@ -17,7 +17,7 @@ export default function SelectDuration({
         Select the duration of your video
       </p>
       <Slider
-        min={1}
+        min={15}
         max={60}
         step={1}
         value={[duration]}

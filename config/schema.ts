@@ -15,5 +15,6 @@ export const Videos = pgTable('videos', {
     captions: varchar('captions').notNull(),
     imageUrls: varchar('imageUrls').notNull().array(),
     voice: varchar('voice').notNull().default('en-US-JennyNeural'),
+    captionStyle: varchar('captionStyle').notNull().default('classic'),
     createdBy: uuid('createdBy').notNull().references(() => Users.id),
 })

@@ -7,6 +7,7 @@ import SelectTopic from "@/components/dashboard/select-topic";
 import SelectStyle from "@/components/dashboard/select-style";
 import SelectDuration from "@/components/dashboard/select-duration";
 import SelectVoice from "@/components/dashboard/select-voice";
+import SelectCaptionStyle from "@/components/dashboard/select-caption-style";
 import CustomLoader from "@/components/custom-loader";
 import axios from "axios";
 
@@ -34,6 +35,7 @@ export default function CreateNew() {
     topic: false,
     imageStyle: false,
     voice: false,
+    captionStyle: false,
   });
   const [loading, setLoading] = useState(false);
   const [, setVideoScript] = useState<VideoScene[]>([]);
@@ -117,10 +119,11 @@ export default function CreateNew() {
       topic: !formData.topic,
       imageStyle: !formData.imageStyle,
       voice: !formData.voice,
+      captionStyle: !formData.captionStyle,
     };
     setErrors(newErrors);
 
-    if (newErrors.topic || newErrors.imageStyle || newErrors.voice) return;
+    if (newErrors.topic || newErrors.imageStyle || newErrors.voice || newErrors.captionStyle) return;
 
     setLoading(true);
 
@@ -157,7 +160,8 @@ export default function CreateNew() {
             audioUrl, 
             captionData, 
             images,
-            formData.voice
+            formData.voice,
+            formData.captionStyle
           );
         }
       } catch (error) {
@@ -184,7 +188,8 @@ export default function CreateNew() {
       punctuated_word: string;
     }>, 
     imageUrls: string[],
-    voice: string
+    voice: string,
+    captionStyle: string
   ) => {
     try {
       const response = await axios.post('/api/videos', {
@@ -192,7 +197,8 @@ export default function CreateNew() {
         audioUrl,
         captions,
         imageUrls,
-        voice
+        voice,
+        captionStyle
       });
       console.log('Video data saved:', response.data);
     } catch (error) {
@@ -208,6 +214,7 @@ export default function CreateNew() {
         <SelectTopic onUserSelect={onHandleInputChange} error={errors.topic} />
         <SelectStyle onUserSelect={onHandleInputChange} error={errors.imageStyle} />
         <SelectVoice onUserSelect={onHandleInputChange} error={errors.voice} />
+        <SelectCaptionStyle onUserSelect={onHandleInputChange} error={errors.captionStyle} />
         <SelectDuration onUserSelect={onHandleInputChange} />
       </div>
 
