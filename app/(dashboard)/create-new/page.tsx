@@ -12,6 +12,7 @@ import axios from "axios";
 interface VideoScene {
   imagePrompt: string;
   contentText: string;
+  audioUrl?: string;
 }
 
 interface formData {
@@ -34,10 +35,16 @@ export default function CreateNew() {
   });
   const [loading, setLoading] = useState(false);
   const [, setVideoScript] = useState<VideoScene[]>([]);
-  const [generatedImages, setGeneratedImages] = useState<string[]>([]);
+  const [, setGeneratedImages] = useState<string[]>([]);
   const [audioGenerating, setAudioGenerating] = useState(false);
   const [, setAudioUrl] = useState<string>('');
-  const [, setCaptions] = useState<string>('');
+  const [, setCaptions] = useState<Array<{
+    word: string;
+    start: number;
+    end: number;
+    confidence: number;
+    punctuated_word: string;
+  }>>([]);
 
   const debouncedInputValue = useDebounce(inputValue, 500);
 
@@ -83,8 +90,24 @@ export default function CreateNew() {
       }
     }
     
-    setGeneratedImages(images);
     return images;
+  };
+
+  const generateCaptions = async (audioUrl: string) => {
+    try {
+      console.log('Generating captions for audio:', audioUrl);
+      const response = await axios.post('/api/generate-captions', {
+        audioUrl
+      });
+      
+      const captionData = response.data.transcript;
+      console.log('Generated captions:', captionData);
+      setCaptions(captionData);
+      return captionData;
+    } catch (error) {
+      console.error('Error generating captions:', error);
+      return [];
+    }
   };
 
   const getVideoScript = async () => {
@@ -106,7 +129,8 @@ export default function CreateNew() {
       setVideoScript(scriptData);
       
       // Generate images for each scene
-      await generateImages(scriptData);
+      const images = await generateImages(scriptData);
+      setGeneratedImages(images);
       
       // Generate audio after getting the script
       setAudioGenerating(true);
@@ -115,12 +139,21 @@ export default function CreateNew() {
           scenes: scriptData
         });
         if (audioResponse.data.success) {
-          console.log('Audio uploaded to:', audioResponse.data.audioUrl);
-          setAudioUrl(audioResponse.data.audioUrl);
-          setCaptions(audioResponse.data.captions || '');
-
-          // Submit video data to database
-          await submitVideoData(scriptData, audioResponse.data.audioUrl, audioResponse.data.captions || '', generatedImages);
+          const audioUrl = audioResponse.data.audioUrl;
+          console.log('Audio uploaded to:', audioUrl);
+          setAudioUrl(audioUrl);
+          
+          // Generate captions ONCE after audio is created
+          console.log('Calling generateCaptions with audioUrl:', audioUrl);
+          const captionData = await generateCaptions(audioUrl);
+          
+          // Submit video data to database with captions
+          await submitVideoData(
+            scriptData, 
+            audioUrl, 
+            captionData, 
+            images
+          );
         }
       } catch (error) {
         console.error('Error generating audio:', error);
@@ -138,7 +171,13 @@ export default function CreateNew() {
   const submitVideoData = async (
     script: VideoScene[], 
     audioUrl: string, 
-    captions: string, 
+    captions: Array<{
+      word: string;
+      start: number;
+      end: number;
+      confidence: number;
+      punctuated_word: string;
+    }>, 
     imageUrls: string[]
   ) => {
     try {

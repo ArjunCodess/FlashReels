@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^5.7.2",
+    "@deepgram/sdk": "^3.11.2",
     "@fal-ai/client": "^1.2.1",
     "@google-cloud/text-to-speech": "^5.5.0",
     "@google/generative-ai": "^0.21.0",
