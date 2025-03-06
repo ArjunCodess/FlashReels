@@ -14,5 +14,6 @@ export const Videos = pgTable('videos', {
     audioUrl: varchar('audioUrl').notNull(),
     captions: varchar('captions').notNull(),
     imageUrls: varchar('imageUrls').notNull().array(),
+    voice: varchar('voice').notNull().default('en-US-JennyNeural'),
     createdBy: uuid('createdBy').notNull().references(() => Users.id),
 })

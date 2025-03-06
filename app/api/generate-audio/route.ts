@@ -23,14 +23,15 @@ interface CloudinaryUploadResult {
 
 export async function POST(request: Request) {
   try {
-    const { scenes } = await request.json() as { scenes: Scene[] };
+    const { scenes, voice } = await request.json() as { scenes: Scene[], voice: string };
     
     // Combine all content text with a pause between each segment
     const combinedText = scenes.map(scene => scene.contentText).join('\n\n');
 
     // Initialize Microsoft Edge TTS
     const tts = new MsEdgeTTS();
-    await tts.setMetadata('en-US-JennyNeural', OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3);
+    // Use the provided voice
+    await tts.setMetadata(voice, OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3);
 
     // Generate audio using Edge TTS
     const { audioStream } = await tts.toStream(combinedText);

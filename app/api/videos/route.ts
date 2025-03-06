@@ -26,13 +26,14 @@ export async function POST(req: Request) {
             return new NextResponse("User not found in database", { status: 404 });
         }
 
-        const { script, audioUrl, captions, imageUrls } = await req.json();
+        const { script, audioUrl, captions, imageUrls, voice } = await req.json();
 
         const video = await db.insert(Videos).values({
             script: JSON.stringify(script),
             audioUrl,
             captions,
             imageUrls,
+            voice,
             createdBy: dbUser[0].id
         }).returning();
 

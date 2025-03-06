@@ -6,6 +6,7 @@ import useDebounce from "@/hooks/useDebounce";
 import SelectTopic from "@/components/dashboard/select-topic";
 import SelectStyle from "@/components/dashboard/select-style";
 import SelectDuration from "@/components/dashboard/select-duration";
+import SelectVoice from "@/components/dashboard/select-voice";
 import CustomLoader from "@/components/custom-loader";
 import axios from "axios";
 
@@ -32,6 +33,7 @@ export default function CreateNew() {
   const [errors, setErrors] = useState({
     topic: false,
     imageStyle: false,
+    voice: false,
   });
   const [loading, setLoading] = useState(false);
   const [, setVideoScript] = useState<VideoScene[]>([]);
@@ -114,10 +116,11 @@ export default function CreateNew() {
     const newErrors = {
       topic: !formData.topic,
       imageStyle: !formData.imageStyle,
+      voice: !formData.voice,
     };
     setErrors(newErrors);
 
-    if (newErrors.topic || newErrors.imageStyle) return;
+    if (newErrors.topic || newErrors.imageStyle || newErrors.voice) return;
 
     setLoading(true);
 
@@ -136,7 +139,8 @@ export default function CreateNew() {
       setAudioGenerating(true);
       try {
         const audioResponse = await axios.post('/api/generate-audio', {
-          scenes: scriptData
+          scenes: scriptData,
+          voice: formData.voice
         });
         if (audioResponse.data.success) {
           const audioUrl = audioResponse.data.audioUrl;
@@ -152,7 +156,8 @@ export default function CreateNew() {
             scriptData, 
             audioUrl, 
             captionData, 
-            images
+            images,
+            formData.voice
           );
         }
       } catch (error) {
@@ -178,14 +183,16 @@ export default function CreateNew() {
       confidence: number;
       punctuated_word: string;
     }>, 
-    imageUrls: string[]
+    imageUrls: string[],
+    voice: string
   ) => {
     try {
       const response = await axios.post('/api/videos', {
         script,
         audioUrl,
         captions,
-        imageUrls
+        imageUrls,
+        voice
       });
       console.log('Video data saved:', response.data);
     } catch (error) {
@@ -200,6 +207,7 @@ export default function CreateNew() {
       <div className="space-y-8">
         <SelectTopic onUserSelect={onHandleInputChange} error={errors.topic} />
         <SelectStyle onUserSelect={onHandleInputChange} error={errors.imageStyle} />
+        <SelectVoice onUserSelect={onHandleInputChange} error={errors.voice} />
         <SelectDuration onUserSelect={onHandleInputChange} />
       </div>
 
