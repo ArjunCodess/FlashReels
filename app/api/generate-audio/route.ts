@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import cloudinary from '@/lib/cloudinary';
+import { MsEdgeTTS, OUTPUT_FORMAT } from 'msedge-tts';
 
 interface Scene {
   imagePrompt: string;
@@ -20,9 +21,6 @@ interface CloudinaryUploadResult {
   url: string;
 }
 
-const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
-const VOICE_ID = 'VR6AewLTigWG4xSOukaG';
-
 export async function POST(request: Request) {
   try {
     const { scenes } = await request.json() as { scenes: Scene[] };
@@ -30,33 +28,29 @@ export async function POST(request: Request) {
     // Combine all content text with a pause between each segment
     const combinedText = scenes.map(scene => scene.contentText).join('\n\n');
 
-    const options = {
-      method: 'POST',
-      headers: {
-        'xi-api-key': ELEVENLABS_API_KEY!,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        text: combinedText,
-        model_id: 'eleven_monolingual_v1',
-        voice_settings: {
-          stability: 0.5,
-          similarity_boost: 0.75,
-        },
-      }),
-    };
+    // Initialize Microsoft Edge TTS
+    const tts = new MsEdgeTTS();
+    await tts.setMetadata('en-US-JennyNeural', OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3);
 
-    const response = await fetch(
-      `https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`,
-      options
-    );
-
-    if (!response.ok) {
-      throw new Error('Failed to generate audio');
-    }
-
-    const arrayBuffer = await response.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    // Generate audio using Edge TTS
+    const { audioStream } = await tts.toStream(combinedText);
+    const chunks: Buffer[] = [];
+    
+    await new Promise((resolve, reject) => {
+      audioStream.on('data', (chunk: Buffer) => {
+        chunks.push(chunk);
+      });
+      
+      audioStream.on('end', () => {
+        resolve(null);
+      });
+      
+      audioStream.on('error', (error) => {
+        reject(error);
+      });
+    });
+    
+    const audioBuffer = Buffer.concat(chunks);
 
     // Ensure audio directory exists
     const audioDir = path.join(process.cwd(), 'audio');
@@ -67,7 +61,7 @@ export async function POST(request: Request) {
     // Generate a unique filename using timestamp
     const fileName = `audio_${Date.now()}.mp3`;
     const filePath = path.join(audioDir, fileName);
-    fs.writeFileSync(filePath, buffer);
+    fs.writeFileSync(filePath, audioBuffer);
 
     try {
       // Upload to Cloudinary in the flash-reels folder

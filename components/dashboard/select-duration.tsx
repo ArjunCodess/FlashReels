@@ -6,7 +6,7 @@ import { Slider } from "@/components/ui/slider";
 export default function SelectDuration({
   onUserSelect,
 }: {
-  onUserSelect: OnUserSelectType;
+  onUserSelect: (fieldName: string, fieldValue: string) => void;
 }) {
   const [duration, setDuration] = useState(30);
 
@@ -17,7 +17,7 @@ export default function SelectDuration({
         Select the duration of your video
       </p>
       <Slider
-        min={15}
+        min={1}
         max={60}
         step={1}
         value={[duration]}

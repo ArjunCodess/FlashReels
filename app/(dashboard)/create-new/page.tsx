@@ -9,6 +9,19 @@ import SelectDuration from "@/components/dashboard/select-duration";
 import CustomLoader from "@/components/custom-loader";
 import axios from "axios";
 
+interface VideoScene {
+  imagePrompt: string;
+  contentText: string;
+}
+
+interface formData {
+  [key: string]: string;
+}
+
+interface OnUserSelectType {
+  (fieldName: string, fieldValue: string): void;
+}
+
 export default function CreateNew() {
   const [formData, setFormData] = useState<formData>({});
   const [inputValue, setInputValue] = useState({
@@ -20,8 +33,11 @@ export default function CreateNew() {
     imageStyle: false,
   });
   const [loading, setLoading] = useState(false);
-  const [, setVideoScript] = useState();
+  const [, setVideoScript] = useState<VideoScene[]>([]);
+  const [generatedImages, setGeneratedImages] = useState<string[]>([]);
   const [audioGenerating, setAudioGenerating] = useState(false);
+  const [, setAudioUrl] = useState<string>('');
+  const [, setCaptions] = useState<string>('');
 
   const debouncedInputValue = useDebounce(inputValue, 500);
 
@@ -49,6 +65,28 @@ export default function CreateNew() {
     []
   );
 
+  const generateImages = async (scenes: VideoScene[]) => {
+    const images: string[] = [];
+    
+    for (const scene of scenes) {
+      try {
+        const response = await axios.post('/api/generate-image', {
+          prompt: scene.imagePrompt
+        });
+        
+        const imageUrl = response.data.imageUrl;
+        console.log('Generated image URL:', imageUrl);
+        images.push(imageUrl);
+      } catch (error) {
+        console.error('Error generating image:', error);
+        images.push('');
+      }
+    }
+    
+    setGeneratedImages(images);
+    return images;
+  };
+
   const getVideoScript = async () => {
     const newErrors = {
       topic: !formData.topic,
@@ -67,6 +105,9 @@ export default function CreateNew() {
       const scriptData = result.data.result;
       setVideoScript(scriptData);
       
+      // Generate images for each scene
+      await generateImages(scriptData);
+      
       // Generate audio after getting the script
       setAudioGenerating(true);
       try {
@@ -75,6 +116,11 @@ export default function CreateNew() {
         });
         if (audioResponse.data.success) {
           console.log('Audio uploaded to:', audioResponse.data.audioUrl);
+          setAudioUrl(audioResponse.data.audioUrl);
+          setCaptions(audioResponse.data.captions || '');
+
+          // Submit video data to database
+          await submitVideoData(scriptData, audioResponse.data.audioUrl, audioResponse.data.captions || '', generatedImages);
         }
       } catch (error) {
         console.error('Error generating audio:', error);
@@ -86,6 +132,25 @@ export default function CreateNew() {
       console.error("Error generating video script:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const submitVideoData = async (
+    script: VideoScene[], 
+    audioUrl: string, 
+    captions: string, 
+    imageUrls: string[]
+  ) => {
+    try {
+      const response = await axios.post('/api/videos', {
+        script,
+        audioUrl,
+        captions,
+        imageUrls
+      });
+      console.log('Video data saved:', response.data);
+    } catch (error) {
+      console.error('Error saving video data:', error);
     }
   };
 
