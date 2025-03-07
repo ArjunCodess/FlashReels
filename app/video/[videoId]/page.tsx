@@ -182,7 +182,7 @@ export default function VideoPage() {
     <div className="container mx-auto py-8 px-4 border rounded-md my-4">
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
         {/* Left Column - Video Player */}
-        <RemotionVideoPlayer />
+        <RemotionVideoPlayer video={video} />
 
         {/* Right Column - Video Details */}
         <div className="space-y-6 col-span-3">
