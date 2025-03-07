@@ -13,7 +13,7 @@ export default function DashboardLayout({
 }>) {
     return (
         <section className="max-w-7xl mx-auto py-2">
-            <div className="flex md:h-[calc(100vh-120px)]">
+            <div className="flex md:min-h-[calc(100vh-120px)]">
                 <div className="hidden md:block bg-background w-72 border rounded-md">
                     <SideNavigation />
                 </div>

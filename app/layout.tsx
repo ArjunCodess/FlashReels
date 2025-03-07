@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
+import { Geist } from "next/font/google";
 import "./globals.css";
 import Provider from "@/providers/provider";
 import { ClerkProvider } from "@clerk/nextjs";
@@ -8,15 +8,9 @@ import Header from "@/components/header";
 import Script from "next/script";
 import { Toaster } from "@/components/ui/toaster";
 
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-  weight: "100 900",
-});
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
-  weight: "100 900",
+const geist = Geist({
+  subsets: ['latin'],
+  variable: '--font-geist-sans',
 });
 
 export const metadata: Metadata = {
@@ -33,7 +27,7 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en">
         <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased mx-auto max-w-7xl`}
+          className={`${geist.variable} antialiased mx-auto max-w-7xl`}
           suppressHydrationWarning
         >
           <Script

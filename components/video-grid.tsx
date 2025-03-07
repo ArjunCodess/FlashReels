@@ -13,7 +13,12 @@ interface VideoGridProps {
   onRetry: () => void;
 }
 
-export default function VideoGrid({ videos, loading, error, onRetry }: VideoGridProps) {
+export default function VideoGrid({
+  videos,
+  loading,
+  error,
+  onRetry,
+}: VideoGridProps) {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[300px]">
@@ -59,4 +64,4 @@ export default function VideoGrid({ videos, loading, error, onRetry }: VideoGrid
       ))}
     </div>
   );
-} 
+}

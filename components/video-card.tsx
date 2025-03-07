@@ -5,6 +5,7 @@ import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
 import { Card } from "@/components/ui/card";
 import VideoStatusUpdater from "@/components/video-status-updater";
+import Link from "next/link";
 
 export interface VideoData {
   id: string;
@@ -34,11 +35,11 @@ export default function VideoCard({ video }: VideoCardProps) {
   };
 
   return (
-    <React.Fragment key={video.id}>
+    <Link href={`/video/${video.id}`} key={video.id}>
       {video.status === 'generating' && (
         <VideoStatusUpdater videoId={video.id} initialStatus={video.status} />
       )}
-      <Card className="group relative overflow-hidden rounded-3xl aspect-[3/4] w-full">
+      <Card className="group relative overflow-hidden rounded-xl aspect-[9/16] w-full">
         {getThumbnail(video) ? (
           <Image 
             src={getThumbnail(video)!} 
@@ -71,6 +72,6 @@ export default function VideoCard({ video }: VideoCardProps) {
           </div>
         )}
       </Card>
-    </React.Fragment>
+    </Link>
   );
 } 
