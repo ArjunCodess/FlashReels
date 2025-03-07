@@ -16,7 +16,7 @@ import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
-import RemotionVideoPlayer from "@/components/remotion-video-player";
+import RemotionVideoPlayer from "@/components/video/video-player";
 
 interface Scene {
   imagePrompt: string;

@@ -4,8 +4,8 @@ import React, { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import axios from "axios";
-import VideoGrid from "@/components/video-grid";
-import { VideoData } from "@/components/video-card";
+import VideoGrid from "@/components/video/video-grid";
+import { VideoData } from "@/components/video/video-card";
 
 // Interface for raw video data from API
 interface RawVideoData {

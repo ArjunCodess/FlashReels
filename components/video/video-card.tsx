@@ -4,7 +4,7 @@ import React from "react";
 import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
 import { Card } from "@/components/ui/card";
-import VideoStatusUpdater from "@/components/video-status-updater";
+import VideoStatusUpdater from "@/components/video/video-status-updater";
 import Link from "next/link";
 
 export interface VideoData {
