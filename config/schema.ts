@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, timestamp, text } from "drizzle-orm/pg-core";
+import { pgTable, uuid, varchar, timestamp, text, jsonb } from "drizzle-orm/pg-core";
 
 export const Users = pgTable('users', {
     id: uuid('id').primaryKey().defaultRandom(),
@@ -14,7 +14,7 @@ export const Videos = pgTable('videos', {
     description: text('description'),
     script: varchar('script').notNull(),
     audioUrl: varchar('audioUrl').notNull(),
-    captions: varchar('captions').notNull(),
+    captions: jsonb('captions').notNull(),
     imageUrls: varchar('imageUrls').notNull().array(),
     voice: varchar('voice').notNull().default('en-US-JennyNeural'),
     captionStyle: varchar('captionStyle').notNull().default('classic'),

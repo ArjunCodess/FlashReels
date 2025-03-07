@@ -18,6 +18,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
 import RemotionVideoPlayer from "@/components/video/video-player";
 
+interface Caption {
+  word: string;
+  start: number;
+  end: number;
+  confidence: number;
+  punctuated_word: string;
+}
+
 interface Scene {
   imagePrompt: string;
   contentText: string;
@@ -36,7 +44,7 @@ interface VideoDetails {
   description: string | null;
   script: string;
   audioUrl: string;
-  captions: string;
+  captions: Caption[];
   imageUrls: string[];
   voice: string;
   captionStyle: string;
@@ -100,6 +108,9 @@ export default function VideoPage() {
       return [];
     }
   };
+
+  const scenes = video?.script ? formatScript(video.script) : [];
+  console.log('Scenes:', scenes);
 
   const handleSaveTitle = async () => {
     if (!video || !video.isOwner) return;
@@ -166,8 +177,6 @@ export default function VideoPage() {
       </div>
     );
   }
-
-  const scenes = formatScript(video.script);
 
   return (
     <div className="container mx-auto py-8 px-4 border rounded-md my-4">

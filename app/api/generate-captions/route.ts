@@ -23,7 +23,13 @@ export async function POST(request: Request) {
         }
 
         // Extract the words array which contains detailed timing information
-        const transcript = result.results.channels[0].alternatives[0].words;
+        const transcript = result.results.channels[0].alternatives[0].words.map(word => ({
+            word: word.word,
+            start: word.start,
+            end: word.end,
+            confidence: word.confidence,
+            punctuated_word: word.punctuated_word
+        }));
         console.log('Generated transcript words:', transcript);
 
         return NextResponse.json({ transcript });
