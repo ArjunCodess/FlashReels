@@ -10,6 +10,8 @@ import SelectVoice from "@/components/dashboard/select-voice";
 import SelectCaptionStyle from "@/components/dashboard/select-caption-style";
 import CustomLoader from "@/components/custom-loader";
 import axios from "axios";
+import { useRouter } from "next/navigation";
+import { toast } from "@/components/ui/use-toast";
 
 interface VideoScene {
   imagePrompt: string;
@@ -26,6 +28,7 @@ interface OnUserSelectType {
 }
 
 export default function CreateNew() {
+  const router = useRouter();
   const [formData, setFormData] = useState<formData>({});
   const [inputValue, setInputValue] = useState({
     fieldName: "",
@@ -154,24 +157,63 @@ export default function CreateNew() {
           console.log('Calling generateCaptions with audioUrl:', audioUrl);
           const captionData = await generateCaptions(audioUrl);
           
-          // Submit video data to database with captions
-          await submitVideoData(
-            scriptData, 
-            audioUrl, 
-            captionData, 
-            images,
-            formData.voice,
-            formData.captionStyle
-          );
+          // Create a title from the topic
+          const title = `${formData.topic.charAt(0).toUpperCase() + formData.topic.slice(1)}`;
+          
+          // Get the first sentence of the first scene as description
+          const description = scriptData[0]?.contentText.split('.')[0] + '.';
+          
+          try {
+            // Submit video data to database with captions
+            const videoData = await submitVideoData(
+              scriptData, 
+              audioUrl, 
+              captionData, 
+              images,
+              formData.voice,
+              formData.captionStyle,
+              title,
+              description
+            );
+            
+            if (videoData) {
+              toast({
+                title: "Video created successfully!",
+                description: "Your video is now being processed.",
+              });
+              
+              // Redirect to dashboard after video creation
+              router.push('/dashboard');
+            } else {
+              throw new Error("Failed to save video data");
+            }
+          } catch (error) {
+            console.error('Error saving video data:', error);
+            toast({
+              title: "Error saving video",
+              description: "There was a problem saving your video. Please try again.",
+              variant: "destructive",
+            });
+          }
         }
       } catch (error) {
         console.error('Error generating audio:', error);
+        toast({
+          title: "Error generating audio",
+          description: "There was a problem generating audio for your video. Please try again.",
+          variant: "destructive",
+        });
       } finally {
         setAudioGenerating(false);
       }
       
     } catch (error) {
       console.error("Error generating video script:", error);
+      toast({
+        title: "Error generating script",
+        description: "There was a problem generating the script for your video. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -189,20 +231,33 @@ export default function CreateNew() {
     }>, 
     imageUrls: string[],
     voice: string,
-    captionStyle: string
+    captionStyle: string,
+    title: string,
+    description: string
   ) => {
     try {
+      // Ensure imageUrls is an array of strings
+      const validImageUrls = imageUrls.filter(url => typeof url === 'string' && url.trim() !== '');
+      
+      // Convert captions to string if needed
+      const captionsData = typeof captions === 'string' ? captions : JSON.stringify(captions);
+      
       const response = await axios.post('/api/videos', {
-        script,
+        script: JSON.stringify(script),
         audioUrl,
-        captions,
-        imageUrls,
+        captions: captionsData,
+        imageUrls: validImageUrls,
         voice,
-        captionStyle
+        captionStyle,
+        title,
+        description
       });
+      
       console.log('Video data saved:', response.data);
+      return response.data;
     } catch (error) {
       console.error('Error saving video data:', error);
+      return null;
     }
   };
 
