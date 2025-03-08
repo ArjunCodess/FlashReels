@@ -43,24 +43,16 @@ jobs:
       - name: Create scripts directory
         run: mkdir -p scripts
 
-      # If the scripts/fetch-video-data.js isn't in the repo yet, create it
-      - name: Check if fetch script exists
-        id: check_script
+      # Always create the fetch script with CommonJS syntax
+      - name: Create fetch script
         run: |
-          if [ -f "scripts/fetch-video-data.js" ]; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-          else
-            echo "exists=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Create fetch script if needed
-        if: steps.check_script.outputs.exists != 'true'
-        run: |
-          mkdir -p scripts
           cat > scripts/fetch-video-data.js << 'EOF'
+          // CommonJS script for fetching video data
           const fs = require('fs');
           const axios = require('axios');
+          const path = require('path');
 
+          // Get command line arguments
           const videoId = process.argv[2];
           const apiUrl = process.env.API_URL || 'http://localhost:3000';
 
@@ -69,6 +61,7 @@ jobs:
             process.exit(1);
           }
 
+          // Use CommonJS async pattern
           async function fetchVideoData() {
             console.log(`Fetching video data for ID: ${videoId} from ${apiUrl}/api/videos/${videoId}`);
             
@@ -112,8 +105,20 @@ jobs:
             }
           }
 
-          fetchVideoData();
+          // Execute the function
+          fetchVideoData().catch(err => {
+            console.error('Unhandled error:', err);
+            process.exit(1);
+          });
           EOF
+
+      # Verify the script content
+      - name: Verify script content
+        run: |
+          echo "First 10 lines of the script:"
+          head -n 10 scripts/fetch-video-data.js
+          echo "Script file size: $(wc -c < scripts/fetch-video-data.js) bytes"
+          echo "Script file permissions: $(ls -la scripts/fetch-video-data.js)"
 
       - name: Create output directory
         run: mkdir -p output
@@ -121,8 +126,20 @@ jobs:
       - name: Install bc command
         run: sudo apt-get update && sudo apt-get install -y bc
 
+      - name: Check Node.js environment
+        run: |
+          echo "Node.js version: $(node -v)"
+          echo "npm version: $(npm -v)"
+          echo "Current working directory: $(pwd)"
+          ls -la scripts/
+
+      - name: Install axios for fetch script
+        run: npm install axios --no-save
+
       - name: Fetch video data
-        run: node scripts/fetch-video-data.js ${{ github.event.inputs.videoId }}
+        run: |
+          echo "Running fetch-video-data.js script..."
+          node ./scripts/fetch-video-data.js ${{ github.event.inputs.videoId }}
         env:
           API_URL: ${{ secrets.API_URL }}
 

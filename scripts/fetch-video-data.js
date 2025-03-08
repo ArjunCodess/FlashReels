@@ -1,6 +1,8 @@
-import fs from 'fs';
-import axios from 'axios';
+// CommonJS script for fetching video data
+const fs = require('fs');
+const axios = require('axios');
 
+// Get command line arguments
 const videoId = process.argv[2];
 const apiUrl = process.env.API_URL || 'http://localhost:3000';
 
@@ -9,6 +11,7 @@ if (!videoId) {
   process.exit(1);
 }
 
+// Use CommonJS async pattern
 async function fetchVideoData() {
   console.log(`Fetching video data for ID: ${videoId} from ${apiUrl}/api/videos/${videoId}`);
   
@@ -52,4 +55,8 @@ async function fetchVideoData() {
   }
 }
 
-fetchVideoData(); 
+// Execute the function
+fetchVideoData().catch(err => {
+  console.error('Unhandled error:', err);
+  process.exit(1); 
+});
