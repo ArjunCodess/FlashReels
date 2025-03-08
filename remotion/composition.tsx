@@ -40,7 +40,7 @@ export default function Composition({
   setDurationInFrames 
 }: { 
   video: Video; 
-  setDurationInFrames: (duration: number) => void 
+  setDurationInFrames?: (duration: number) => void 
 }) {
   const captions = video.captions;
   const imagesList = video.imageUrls;
@@ -77,19 +77,18 @@ export default function Composition({
       return 0;
     }
     const totalDuration = captions[captions.length - 1].end * fps;
-    if (setDurationInFrames) {
-      setDurationInFrames(totalDuration);
-    }
     return totalDuration;
-  }, [captions, fps, setDurationInFrames]);
+  }, [captions, fps]);
 
   const durationInFrames = getDurationInFrames();
-
+  
+  // Use an effect to update the parent component's state
   useEffect(() => {
-    if (video) {
-      getDurationInFrames();
+    // Only call setDurationInFrames if it exists
+    if (typeof setDurationInFrames === 'function') {
+      setDurationInFrames(durationInFrames);
     }
-  }, [video, getDurationInFrames]);
+  }, [durationInFrames, setDurationInFrames]);
 
   const getCurrentCaption = () => {
     const currentTime = frame / fps;

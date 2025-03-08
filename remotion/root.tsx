@@ -873,7 +873,9 @@ export const RemotionRoot: React.FC = () => {
       fps={30}
       width={720}
       height={1280}
-      defaultProps={{ video }}
+      defaultProps={{ 
+        video 
+      }}
     />
   );
 };
