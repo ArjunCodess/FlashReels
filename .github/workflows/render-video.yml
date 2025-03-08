@@ -1,0 +1,146 @@
+name: Render Video
+
+on:
+  workflow_dispatch:
+    inputs:
+      videoId:
+        description: 'The ID of the video to render'
+        required: true
+      width:
+        description: 'Video width in pixels'
+        required: false
+        default: '1080'
+      height:
+        description: 'Video height in pixels'
+        required: false
+        default: '1920'
+      fps:
+        description: 'Frames per second'
+        required: false
+        default: '30'
+      duration:
+        description: 'Duration in seconds'
+        required: false
+        default: '30'
+
+jobs:
+  render:
+    name: Render video
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create scripts directory
+        run: mkdir -p scripts
+
+      # If the scripts/fetch-video-data.js isn't in the repo yet, create it
+      - name: Check if fetch script exists
+        id: check_script
+        run: |
+          if [ -f "scripts/fetch-video-data.js" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create fetch script if needed
+        if: steps.check_script.outputs.exists != 'true'
+        run: |
+          mkdir -p scripts
+          cat > scripts/fetch-video-data.js << 'EOF'
+          const fs = require('fs');
+          const axios = require('axios');
+
+          const videoId = process.argv[2];
+          const apiUrl = process.env.API_URL || 'http://localhost:3000';
+
+          if (!videoId) {
+            console.error('Video ID is required');
+            process.exit(1);
+          }
+
+          async function fetchVideoData() {
+            console.log(`Fetching video data for ID: ${videoId} from ${apiUrl}/api/videos/${videoId}`);
+            
+            try {
+              const response = await axios.get(`${apiUrl}/api/videos/${videoId}`);
+              const videoData = response.data;
+              
+              // Extract only the needed properties for Remotion rendering
+              const remotionProps = {
+                videoId: videoData.id,
+                title: videoData.title,
+                description: videoData.description,
+                imageUrls: videoData.imageUrls || [],
+                audioUrl: videoData.audioUrl || "",
+                captions: videoData.captions || [],
+                script: videoData.script || "",
+                voice: videoData.voice || ""
+              };
+              
+              fs.writeFileSync('video-data.json', JSON.stringify(remotionProps, null, 2));
+              console.log('Video data saved to video-data.json');
+              return remotionProps;
+            } catch (error) {
+              console.error('Error fetching video data:', error.message);
+              
+              // Create a fallback object with the videoId
+              const fallbackData = {
+                videoId: videoId,
+                title: "Video not found",
+                description: null,
+                imageUrls: [],
+                audioUrl: "",
+                captions: [],
+                script: "",
+                voice: ""
+              };
+              
+              fs.writeFileSync('video-data.json', JSON.stringify(fallbackData, null, 2));
+              console.error('Created fallback video data');
+              return fallbackData;
+            }
+          }
+
+          fetchVideoData();
+          EOF
+
+      - name: Create output directory
+        run: mkdir -p output
+
+      - name: Install bc command
+        run: sudo apt-get update && sudo apt-get install -y bc
+
+      - name: Fetch video data
+        run: node scripts/fetch-video-data.js ${{ github.event.inputs.videoId }}
+        env:
+          API_URL: ${{ secrets.API_URL }}
+
+      - name: Render video
+        run: |
+          npx remotion render \
+            remotion \
+            FlashReelVideo \
+            output/video-${{ github.event.inputs.videoId }}.mp4 \
+            --props="./video-data.json" \
+            --width=${{ github.event.inputs.width }} \
+            --height=${{ github.event.inputs.height }} \
+            --fps=${{ github.event.inputs.fps }} \
+            --duration=$(echo "${{ github.event.inputs.duration }} * ${{ github.event.inputs.fps }}" | bc)
+
+      - name: Upload rendered video
+        uses: actions/upload-artifact@v4
+        with:
+          name: rendered-video-${{ github.event.inputs.videoId }}
+          path: output/video-${{ github.event.inputs.videoId }}.mp4
+          retention-days: 7 
