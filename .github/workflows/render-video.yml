@@ -134,7 +134,7 @@ jobs:
           ls -la scripts/
 
       - name: Install axios for fetch script
-        run: npm install axios --no-save
+        run: npm install axios --no-save --legacy-peer-deps
 
       - name: Fetch video data
         run: |
