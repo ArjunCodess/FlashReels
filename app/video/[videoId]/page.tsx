@@ -86,9 +86,11 @@ export default function VideoPage() {
     const fetchVideoDetails = async () => {
       try {
         const response = await axios.get(`/api/videos/${videoId}`);
-        setVideo(response.data);
-        setEditedTitle(response.data.title);
-        setEditedDescription(response.data.description || "");
+        const videoData = response.data;
+        console.log("Fetched video data with audio URL:", videoData.audioUrl);
+        setVideo(videoData);
+        setEditedTitle(videoData.title);
+        setEditedDescription(videoData.description || "");
       } catch (err) {
         setError("Failed to load video details");
         console.error(err);
@@ -102,9 +104,15 @@ export default function VideoPage() {
 
   const formatScript = (scriptStr: string) => {
     try {
+      // First try to parse as JSON
       const scenes = JSON.parse(scriptStr) as Scene[];
       return scenes;
     } catch (err) {
+      // If parsing fails, check if it's already an array
+      if (Array.isArray(scriptStr)) {
+        return scriptStr as Scene[];
+      }
+      // If all else fails, return empty array
       console.error('Error parsing script:', err);
       return [];
     }

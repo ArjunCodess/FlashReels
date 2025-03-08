@@ -35,19 +35,53 @@ const fontStyles = {
   `
 };
 
-export default function Composition({ video }: { video: Video }) {
+export default function Composition({ 
+  video, 
+  setDurationInFrames 
+}: { 
+  video: Video; 
+  setDurationInFrames: (duration: number) => void 
+}) {
   const captions = video.captions;
   const imagesList = video.imageUrls;
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
+
+  // Debug log for audio url
+  useEffect(() => {
+    console.log("Audio URL:", video.audioUrl);
+  }, [video.audioUrl]);
+
+  // Function to handle audio URL for Remotion
+  const getAudioSource = useCallback(() => {
+    if (!video.audioUrl) return null;
+    
+    // If it's already a full URL (starts with http or https), return it as is
+    if (video.audioUrl.startsWith('http://') || video.audioUrl.startsWith('https://')) {
+      return video.audioUrl;
+    }
+    
+    // Otherwise, try to handle it as a relative path
+    try {
+      return staticFile(video.audioUrl);
+    } catch (error) {
+      console.error("Error loading audio file:", error);
+      return video.audioUrl; // Fallback to original
+    }
+  }, [video.audioUrl]);
+
+  const audioSource = getAudioSource();
 
   const getDurationInFrames = useCallback(() => {
     if (!captions || captions.length === 0) {
       return 0;
     }
     const totalDuration = captions[captions.length - 1].end * fps;
+    if (setDurationInFrames) {
+      setDurationInFrames(totalDuration);
+    }
     return totalDuration;
-  }, [captions, fps]);
+  }, [captions, fps, setDurationInFrames]);
 
   const durationInFrames = getDurationInFrames();
 
@@ -282,7 +316,12 @@ export default function Composition({ video }: { video: Video }) {
 
       <AbsoluteFill>{getCaptionStyle()}</AbsoluteFill>
 
-      <Audio src={video.audioUrl} />
+      {audioSource && (
+        <Audio 
+          src={audioSource} 
+          volume={1}
+        />
+      )}
     </AbsoluteFill>
   );
 }
