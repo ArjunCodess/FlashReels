@@ -18,6 +18,7 @@ type ParamsWithPromiseMethods = {
   [Symbol.toStringTag]: string;
 };
 
+// Simplify the route handler to avoid type issues
 export async function POST(
   req: NextRequest,
   { params }: { params: ParamsWithPromiseMethods }
@@ -79,17 +80,43 @@ export async function POST(
     console.log(`Using token: ${githubToken ? 'Token exists (first 4 chars: ' + githubToken.substring(0, 4) + '...)' : 'No token found'}`);
     
     try {
-      // Trigger GitHub Actions workflow
-      console.log(`Making request to: https://api.github.com/repos/${githubRepo}/actions/workflows/render-video.yml/dispatches`);
+      // First try to list all workflows to find the correct one
+      console.log(`Listing all workflows in repo: ${githubRepo}`);
+      const workflowsResponse = await axios.get(
+        `https://api.github.com/repos/${githubRepo}/actions/workflows`,
+        {
+          headers: {
+            Authorization: `token ${githubToken}`,
+            Accept: 'application/vnd.github.v3+json',
+          },
+        }
+      );
+      
+      console.log(`Found ${workflowsResponse.data.workflows.length} workflows`);
+      
+      // Find the render video workflow
+      const renderWorkflow = workflowsResponse.data.workflows.find(
+        (wf: { name: string; path: string; id: number }) => 
+          wf.name === "Render Video" || wf.path.includes("render-video.yml")
+      );
+      
+      if (!renderWorkflow) {
+        throw new Error("Render Video workflow not found in repository");
+      }
+      
+      console.log(`Found workflow: ${renderWorkflow.name} (${renderWorkflow.path}), ID: ${renderWorkflow.id}`);
+      
+      // Use the workflow ID instead of the path
+      console.log(`Making request to trigger workflow ID: ${renderWorkflow.id}`);
       console.log(`With payload: ${JSON.stringify(payload)}`);
       
       const response = await axios.post(
-        `https://api.github.com/repos/${githubRepo}/actions/workflows/render-video.yml/dispatches`,
+        `https://api.github.com/repos/${githubRepo}/actions/workflows/${renderWorkflow.id}/dispatches`,
         payload,
         {
           headers: {
             Authorization: `token ${githubToken}`,
-            Accept: "application/vnd.github.v3+json",
+            Accept: 'application/vnd.github.v3+json',
           },
         }
       );
@@ -116,11 +143,13 @@ export async function POST(
       // More specific error message based on status code
       let errorMessage = "Failed to trigger video render";
       if (axiosError.response?.status === 404) {
-        errorMessage = "Workflow file not found. Make sure you've committed .github/workflows/render-video.yml to your repository.";
+        errorMessage = "Workflow file not found or not configured for manual triggering. Make sure you've committed .github/workflows/render-video.yml to your repository and it has the workflow_dispatch trigger.";
       } else if (axiosError.response?.status === 401) {
-        errorMessage = "GitHub authentication failed. Check your PAT_TOKEN token.";
+        errorMessage = "GitHub authentication failed. Check your PAT_TOKEN token and make sure it has the 'workflow' scope.";
       } else if (axiosError.response?.status === 422) {
-        errorMessage = "Invalid request to GitHub API. Check your repository name format.";
+        errorMessage = "Invalid request to GitHub API. Check your repository name format and make sure the branch exists.";
+      } else if (axiosError.response?.status === 403) {
+        errorMessage = "Permission denied. Make sure your PAT_TOKEN has the necessary permissions and GitHub Actions is enabled in your repository.";
       }
       
       return NextResponse.json(
