@@ -21,7 +21,6 @@ export default function SelectCaptionStyle({
   const captionStyles = [
     { name: "Classic", value: "classic" },
     { name: "Supreme", value: "supreme" },
-    { name: "Neon", value: "neon" },
     { name: "Glitch", value: "glitch" },
     { name: "Fire", value: "fire" },
     { name: "Futuristic", value: "futuristic" }
