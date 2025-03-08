@@ -182,7 +182,7 @@ jobs:
       - name: Render video
         run: |
           npx remotion render \
-            remotion \
+            remotion/index.ts \
             FlashReelVideo \
             output/video-${{ github.event.inputs.videoId }}.mp4 \
             --props="./video-data.json" \
