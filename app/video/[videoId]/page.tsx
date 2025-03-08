@@ -11,12 +11,13 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronUp, Pencil, Check, X } from "lucide-react";
+import { ChevronDown, ChevronUp, Pencil } from "lucide-react";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
 import RemotionVideoPlayer from "@/components/video/video-player";
+import { RenderButton } from "@/components/render-button";
 
 interface Caption {
   word: string;
@@ -187,25 +188,25 @@ export default function VideoPage() {
         {/* Right Column - Video Details */}
         <div className="space-y-6 col-span-3">
           {/* Title with edit option */}
-          <div>
+          <div className="flex justify-between items-center mb-4">
             {isEditingTitle ? (
-              <div className="flex items-center gap-2">
+              <div className="flex-1 flex space-x-2">
                 <Input
                   value={editedTitle}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditedTitle(e.target.value)}
-                  className="text-2xl font-bold"
+                  className="flex-1"
                   disabled={isSaving}
                 />
                 <Button 
-                  size="icon" 
+                  size="sm" 
                   variant="ghost" 
                   onClick={handleSaveTitle}
                   disabled={isSaving}
                 >
-                  <Check className="h-4 w-4" />
+                  Save
                 </Button>
                 <Button 
-                  size="icon" 
+                  size="sm" 
                   variant="ghost" 
                   onClick={() => {
                     setIsEditingTitle(false);
@@ -213,15 +214,15 @@ export default function VideoPage() {
                   }}
                   disabled={isSaving}
                 >
-                  <X className="h-4 w-4" />
+                  Cancel
                 </Button>
               </div>
             ) : (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center space-x-4 flex-1">
                 <h1 className="text-3xl font-bold">{video.title}</h1>
                 {video.isOwner && (
                   <Button 
-                    size="icon" 
+                    size="sm" 
                     variant="ghost" 
                     onClick={() => setIsEditingTitle(true)}
                   >
@@ -230,56 +231,61 @@ export default function VideoPage() {
                 )}
               </div>
             )}
-
-            {/* Description with edit option */}
-            {isEditingDescription ? (
-              <div className="flex flex-col gap-2 mt-2">
-                <Textarea
-                  value={editedDescription}
-                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setEditedDescription(e.target.value)}
-                  className="min-h-[100px]"
-                  placeholder="Add a description..."
-                  disabled={isSaving}
-                />
-                <div className="flex justify-end gap-2">
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    onClick={handleSaveDescription}
-                    disabled={isSaving}
-                  >
-                    Save
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="ghost" 
-                    onClick={() => {
-                      setIsEditingDescription(false);
-                      setEditedDescription(video.description || "");
-                    }}
-                    disabled={isSaving}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-start gap-2 mt-2">
-                <p className="text-gray-600 dark:text-gray-400">
-                  {video.description || "No description"}
-                </p>
-                {video.isOwner && (
-                  <Button 
-                    size="icon" 
-                    variant="ghost" 
-                    onClick={() => setIsEditingDescription(true)}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
+            
+            {/* Add the RenderButton here */}
+            {video.isOwner && video.status === "completed" && (
+              <RenderButton videoId={video.id} />
             )}
           </div>
+
+          {/* Description with edit option */}
+          {isEditingDescription ? (
+            <div className="flex flex-col gap-2 mt-2">
+              <Textarea
+                value={editedDescription}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setEditedDescription(e.target.value)}
+                className="min-h-[100px]"
+                placeholder="Add a description..."
+                disabled={isSaving}
+              />
+              <div className="flex justify-end gap-2">
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={handleSaveDescription}
+                  disabled={isSaving}
+                >
+                  Save
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  onClick={() => {
+                    setIsEditingDescription(false);
+                    setEditedDescription(video.description || "");
+                  }}
+                  disabled={isSaving}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-start gap-2 mt-2">
+              <p className="text-gray-600 dark:text-gray-400">
+                {video.description || "No description"}
+              </p>
+              {video.isOwner && (
+                <Button 
+                  size="icon" 
+                  variant="ghost" 
+                  onClick={() => setIsEditingDescription(true)}
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div>
