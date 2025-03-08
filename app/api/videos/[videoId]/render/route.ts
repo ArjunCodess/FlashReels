@@ -64,12 +64,12 @@ export async function POST(
     };
 
     // Get GitHub PAT from environment variables
-    const githubToken = process.env.GITHUB_PAT;
-    const githubRepo = process.env.GITHUB_REPO || "username/repo-name";
+    const githubToken = process.env.PAT_TOKEN;
+    const githubRepo = process.env.REPO_NAME || "username/repo-name";
 
     if (!githubToken) {
       return NextResponse.json(
-        { error: "GitHub token not configured" },
+        { error: "GitHub token not configured. Please add PAT_TOKEN to your environment variables." },
         { status: 500 }
       );
     }
@@ -114,7 +114,7 @@ export async function POST(
       if (axiosError.response?.status === 404) {
         errorMessage = "Workflow file not found. Make sure you've committed .github/workflows/render-video.yml to your repository.";
       } else if (axiosError.response?.status === 401) {
-        errorMessage = "GitHub authentication failed. Check your GITHUB_PAT token.";
+        errorMessage = "GitHub authentication failed. Check your PAT_TOKEN token.";
       } else if (axiosError.response?.status === 422) {
         errorMessage = "Invalid request to GitHub API. Check your repository name format.";
       }
