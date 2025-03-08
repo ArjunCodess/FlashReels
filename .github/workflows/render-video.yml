@@ -58,9 +58,12 @@ jobs:
         run: |
           mkdir -p scripts
           cat > scripts/fetch-video-data.js << 'EOF'
+          // Use CommonJS syntax consistently
           const fs = require('fs');
           const axios = require('axios');
+          const path = require('path');
 
+          // Get command line arguments
           const videoId = process.argv[2];
           const apiUrl = process.env.API_URL || 'http://localhost:3000';
 
@@ -69,6 +72,7 @@ jobs:
             process.exit(1);
           }
 
+          // Use CommonJS async pattern
           async function fetchVideoData() {
             console.log(`Fetching video data for ID: ${videoId} from ${apiUrl}/api/videos/${videoId}`);
             
@@ -112,7 +116,11 @@ jobs:
             }
           }
 
-          fetchVideoData();
+          // Execute the function
+          fetchVideoData().catch(err => {
+            console.error('Unhandled error:', err);
+            process.exit(1);
+          });
           EOF
 
       - name: Create output directory
@@ -120,6 +128,13 @@ jobs:
 
       - name: Install bc command
         run: sudo apt-get update && sudo apt-get install -y bc
+
+      - name: Check Node.js environment
+        run: |
+          echo "Node.js version: $(node -v)"
+          echo "npm version: $(npm -v)"
+          echo "Current working directory: $(pwd)"
+          ls -la scripts/
 
       - name: Fetch video data
         run: node scripts/fetch-video-data.js ${{ github.event.inputs.videoId }}
