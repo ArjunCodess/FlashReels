@@ -47,10 +47,11 @@ jobs:
       - name: Create fetch script
         run: |
           cat > scripts/fetch-video-data.js << 'EOF'
-          // CommonJS script for fetching video data
+          // CommonJS script for fetching video data using only built-in Node.js modules
           const fs = require('fs');
-          const axios = require('axios');
-          const path = require('path');
+          const https = require('https');
+          const http = require('http');
+          const url = require('url');
 
           // Get command line arguments
           const videoId = process.argv[2];
@@ -61,13 +62,73 @@ jobs:
             process.exit(1);
           }
 
-          // Use CommonJS async pattern
-          async function fetchVideoData() {
+          // Function to make HTTP/HTTPS requests without external dependencies
+          function makeRequest(urlString, callback) {
+            const parsedUrl = url.parse(urlString);
+            const options = {
+              hostname: parsedUrl.hostname,
+              port: parsedUrl.port || (parsedUrl.protocol === 'https:' ? 443 : 80),
+              path: parsedUrl.path,
+              method: 'GET',
+              headers: {
+                'User-Agent': 'FlashReels-VideoRenderer',
+                'Accept': 'application/json'
+              }
+            };
+
+            const reqModule = parsedUrl.protocol === 'https:' ? https : http;
+            
+            const req = reqModule.request(options, (res) => {
+              let data = '';
+              res.on('data', (chunk) => {
+                data += chunk;
+              });
+              
+              res.on('end', () => {
+                if (res.statusCode >= 200 && res.statusCode < 300) {
+                  try {
+                    const jsonData = JSON.parse(data);
+                    callback(null, jsonData);
+                  } catch (err) {
+                    callback(new Error(`Failed to parse response: ${err.message}`));
+                  }
+                } else {
+                  callback(new Error(`Request failed with status code: ${res.statusCode}`));
+                }
+              });
+            });
+            
+            req.on('error', (err) => {
+              callback(err);
+            });
+            
+            req.end();
+          }
+
+          // Function to fetch video data
+          function fetchVideoData() {
             console.log(`Fetching video data for ID: ${videoId} from ${apiUrl}/api/videos/${videoId}`);
             
-            try {
-              const response = await axios.get(`${apiUrl}/api/videos/${videoId}`);
-              const videoData = response.data;
+            makeRequest(`${apiUrl}/api/videos/${videoId}`, (err, videoData) => {
+              if (err) {
+                console.error('Error fetching video data:', err.message);
+                
+                // Create a fallback object with the videoId
+                const fallbackData = {
+                  videoId: videoId,
+                  title: "Video not found",
+                  description: null,
+                  imageUrls: [],
+                  audioUrl: "",
+                  captions: [],
+                  script: "",
+                  voice: ""
+                };
+                
+                fs.writeFileSync('video-data.json', JSON.stringify(fallbackData, null, 2));
+                console.error('Created fallback video data');
+                return;
+              }
               
               // Extract only the needed properties for Remotion rendering
               const remotionProps = {
@@ -83,33 +144,11 @@ jobs:
               
               fs.writeFileSync('video-data.json', JSON.stringify(remotionProps, null, 2));
               console.log('Video data saved to video-data.json');
-              return remotionProps;
-            } catch (error) {
-              console.error('Error fetching video data:', error.message);
-              
-              // Create a fallback object with the videoId
-              const fallbackData = {
-                videoId: videoId,
-                title: "Video not found",
-                description: null,
-                imageUrls: [],
-                audioUrl: "",
-                captions: [],
-                script: "",
-                voice: ""
-              };
-              
-              fs.writeFileSync('video-data.json', JSON.stringify(fallbackData, null, 2));
-              console.error('Created fallback video data');
-              return fallbackData;
-            }
+            });
           }
 
           // Execute the function
-          fetchVideoData().catch(err => {
-            console.error('Unhandled error:', err);
-            process.exit(1);
-          });
+          fetchVideoData();
           EOF
 
       # Verify the script content
@@ -132,9 +171,6 @@ jobs:
           echo "npm version: $(npm -v)"
           echo "Current working directory: $(pwd)"
           ls -la scripts/
-
-      - name: Install axios for fetch script
-        run: npm install axios --no-save
 
       - name: Fetch video data
         run: |
