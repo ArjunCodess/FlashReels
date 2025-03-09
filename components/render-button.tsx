@@ -7,9 +7,10 @@ import { useToast } from "@/components/ui/use-toast";
 interface RenderButtonProps {
   videoId: string;
   onVideoReady?: (downloadUrl: string) => void;
+  className?: string;
 }
 
-export const RenderButton: React.FC<RenderButtonProps> = ({ videoId, onVideoReady }) => {
+export const RenderButton: React.FC<RenderButtonProps> = ({ videoId, onVideoReady, className }) => {
   const [isRendering, setIsRendering] = useState(false);
   const { toast } = useToast();
 
@@ -95,7 +96,7 @@ export const RenderButton: React.FC<RenderButtonProps> = ({ videoId, onVideoRead
       disabled={isRendering}
       variant="default"
       size="sm"
-      className="flex items-center gap-2"
+      className={`flex items-center gap-2 ${className}`}
     >
       {isRendering ? (
         <>

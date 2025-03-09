@@ -40,24 +40,14 @@ interface GitHubArtifactsResponse {
   artifacts: GitHubArtifact[];
 }
 
-// Create a type that combines videoId with Promise methods
-type ParamsWithPromiseMethods = { 
-  params: {
-    videoId: string;
-    then: Promise<unknown>['then'];
-    catch: Promise<unknown>['catch'];
-    finally: Promise<unknown>['finally'];
-    [Symbol.toStringTag]: string;
-  }
-};
-
 export async function GET(
   req: NextRequest,
-  context: ParamsWithPromiseMethods
+  { params }: { params: Promise<{ videoId: string }> }
 ) {
   try {
     const { userId } = auth();
-    const { videoId } = context.params;
+    const resolvedParams = await params;
+    const videoId = resolvedParams.videoId;
 
     // Check if user is authenticated
     if (!userId) {

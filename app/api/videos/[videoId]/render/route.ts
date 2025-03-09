@@ -9,23 +9,15 @@ interface RenderRequestBody {
   duration?: number;
 }
 
-// Create a type that combines videoId with Promise methods
-type ParamsWithPromiseMethods = { 
-  videoId: string;
-  then: Promise<unknown>['then'];
-  catch: Promise<unknown>['catch'];
-  finally: Promise<unknown>['finally'];
-  [Symbol.toStringTag]: string;
-};
-
 // Simplify the route handler to avoid type issues
 export async function POST(
   req: NextRequest,
-  { params }: { params: ParamsWithPromiseMethods }
+  { params }: { params: Promise<{ videoId: string }> }
 ) {
   try {
     const { userId } = auth();
-    const { videoId } = params;
+    const resolvedParams = await params;
+    const videoId = resolvedParams.videoId;
 
     // Check if user is authenticated
     if (!userId) {

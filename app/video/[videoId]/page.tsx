@@ -329,19 +329,25 @@ export default function VideoPage() {
 
           {/* Action Buttons - placed just above Technical Details */}
           <div className="grid grid-cols-2 gap-4 mt-4">
-            {video.isOwner && video.status === "completed" && (
-              <RenderButton videoId={video.id} onVideoReady={handleVideoReady} />
+            {video.isOwner && video.status === "completed" && !video.downloadUrl && (
+              <RenderButton 
+                videoId={video.id} 
+                onVideoReady={handleVideoReady}
+                className="w-full col-span-2"
+              />
             )}
             {video.downloadUrl && (
-              <DownloadButton videoId={video.id} downloadUrl={video.downloadUrl} />
+              <DownloadButton 
+                videoId={video.id} 
+                downloadUrl={video.downloadUrl} 
+                className="w-full col-span-2"
+              />
             )}
             {/* Fill empty space with placeholders if buttons aren't shown */}
             {!(video.isOwner && video.status === "completed") && <div></div>}
             {!video.downloadUrl && <div></div>}
           </div>
-
           
-
           {/* Technical Details Collapsible */}
           <Collapsible
             open={showTechnicalDetails}

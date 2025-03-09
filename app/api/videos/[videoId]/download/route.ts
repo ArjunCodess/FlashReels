@@ -5,22 +5,14 @@ import { db } from "@/config/db";
 import { eq } from "drizzle-orm";
 import JSZip from "jszip";
 
-// Create a type that combines videoId with Promise methods
-type ParamsWithPromiseMethods = { 
-  videoId: string;
-  then: Promise<unknown>['then'];
-  catch: Promise<unknown>['catch'];
-  finally: Promise<unknown>['finally'];
-  [Symbol.toStringTag]: string;
-};
-
 export async function GET(
   req: NextRequest,
-  { params }: { params: ParamsWithPromiseMethods }
+  { params }: { params: Promise<{ videoId: string }> }
 ) {
   try {
     const { userId } = auth();
-    const { videoId } = params;
+    const resolvedParams = await params;
+    const videoId = resolvedParams.videoId;
 
     console.log(`Download request for video ID: ${videoId}`);
 
