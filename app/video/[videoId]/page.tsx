@@ -11,7 +11,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronUp, Pencil } from "lucide-react";
+import { ChevronDown, ChevronUp, Pencil, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -69,18 +69,21 @@ export default function VideoPage() {
     audio: false,
     images: false,
   });
-  
+
   // Editing states
-  const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [isEditingDescription, setIsEditingDescription] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState("");
   const [editedDescription, setEditedDescription] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
+  // Workflow state
+  const [isWorkflowInProgress, setIsWorkflowInProgress] = useState(false);
+  const [workflowStatus, setWorkflowStatus] = useState<string | null>(null);
+
   const toggleSection = (section: keyof typeof expandedSections) => {
-    setExpandedSections(prev => ({
+    setExpandedSections((prev) => ({
       ...prev,
-      [section]: !prev[section]
+      [section]: !prev[section],
     }));
   };
 
@@ -104,6 +107,54 @@ export default function VideoPage() {
     fetchVideoDetails();
   }, [videoId]);
 
+  // Check workflow status
+  useEffect(() => {
+    if (
+      !video ||
+      !video.isOwner ||
+      video.status !== "completed" ||
+      video.downloadUrl
+    ) {
+      return;
+    }
+
+    const checkWorkflowStatus = async () => {
+      try {
+        const response = await axios.get(
+          `/api/videos/${videoId}/workflow-status`
+        );
+
+        if (
+          response.data.status === "in_progress" ||
+          response.data.status === "queued"
+        ) {
+          setIsWorkflowInProgress(true);
+          setWorkflowStatus(response.data.status);
+
+          // Check again after 30 seconds
+          setTimeout(checkWorkflowStatus, 30000);
+        } else if (response.data.downloadUrl) {
+          setIsWorkflowInProgress(false);
+          setWorkflowStatus("completed");
+
+          // Update video with download URL
+          setVideo((prev) =>
+            prev ? { ...prev, downloadUrl: response.data.downloadUrl } : null
+          );
+        } else {
+          setIsWorkflowInProgress(false);
+          setWorkflowStatus(response.data.status || null);
+        }
+      } catch (error) {
+        console.error("Error checking workflow status:", error);
+        setIsWorkflowInProgress(false);
+      }
+    };
+
+    // Check workflow status when component mounts
+    checkWorkflowStatus();
+  }, [videoId, video]);
+
   const formatScript = (scriptStr: string) => {
     try {
       // First try to parse as JSON
@@ -115,55 +166,44 @@ export default function VideoPage() {
         return scriptStr as Scene[];
       }
       // If all else fails, return empty array
-      console.error('Error parsing script:', err);
+      console.error("Error parsing script:", err);
       return [];
     }
   };
 
   const scenes = video?.script ? formatScript(video.script) : [];
-  console.log('Scenes:', scenes);
+  console.log("Scenes:", scenes);
 
-  const handleSaveTitle = async () => {
+  const handleSave = async () => {
     if (!video || !video.isOwner) return;
-    
+
     setIsSaving(true);
     try {
-      await axios.patch(`/api/videos/${videoId}`, { title: editedTitle });
-      setVideo(prev => prev ? { ...prev, title: editedTitle } : null);
-      setIsEditingTitle(false);
-      toast({
-        title: "Success",
-        description: "Title updated successfully",
+      await axios.patch(`/api/videos/${videoId}`, {
+        title: editedTitle,
+        description: editedDescription,
       });
-    } catch (err) {
-      console.error('Error updating title:', err);
-      toast({
-        title: "Error",
-        description: "Failed to update title",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
-  const handleSaveDescription = async () => {
-    if (!video || !video.isOwner) return;
-    
-    setIsSaving(true);
-    try {
-      await axios.patch(`/api/videos/${videoId}`, { description: editedDescription });
-      setVideo(prev => prev ? { ...prev, description: editedDescription } : null);
-      setIsEditingDescription(false);
+      setVideo((prev) =>
+        prev
+          ? {
+              ...prev,
+              title: editedTitle,
+              description: editedDescription,
+            }
+          : null
+      );
+
+      setIsEditing(false);
       toast({
         title: "Success",
-        description: "Description updated successfully",
+        description: "Video details updated successfully",
       });
     } catch (err) {
-      console.error('Error updating description:', err);
+      console.error("Error updating video details:", err);
       toast({
         title: "Error",
-        description: "Failed to update description",
+        description: "Failed to update video details",
         variant: "destructive",
       });
     } finally {
@@ -176,9 +216,17 @@ export default function VideoPage() {
     if (video) {
       setVideo({
         ...video,
-        downloadUrl
+        downloadUrl,
       });
+      setIsWorkflowInProgress(false);
+      setWorkflowStatus("completed");
     }
+  };
+
+  // Start a workflow
+  const handleStartWorkflow = () => {
+    setIsWorkflowInProgress(true);
+    setWorkflowStatus("starting");
   };
 
   if (loading) {
@@ -206,78 +254,59 @@ export default function VideoPage() {
         <RemotionVideoPlayer video={video} />
 
         {/* Right Column - Video Details */}
-        <div className="space-y-3 col-span-3">
-          {/* Title with edit option */}
-          <div className="flex items-center mt-6">
-            {isEditingTitle ? (
-              <>
+        <div className="space-y-2 col-span-3">
+          {/* Title and Description with single edit option */}
+          {isEditing ? (
+            <div className="mt-2">
+              <div className="mb-4">
+                <label
+                  htmlFor="title"
+                  className="block text-sm font-medium mb-1"
+                >
+                  Title
+                </label>
                 <Input
+                  id="title"
                   type="text"
                   value={editedTitle}
                   onChange={(e) => setEditedTitle(e.target.value)}
-                  className="text-3xl font-bold flex-grow focus:outline-none"
+                  className="text-xl font-bold w-full"
                   disabled={isSaving}
                 />
-                <Button 
-                  size="sm"
-                  variant="outline" 
-                  onClick={handleSaveTitle}
-                  disabled={isSaving}
-                  className="ml-2"
-                >
-                  Save
-                </Button>
-                <Button 
-                  size="sm"
-                  variant="ghost" 
-                  onClick={() => setIsEditingTitle(false)}
-                  disabled={isSaving}
-                  className="ml-2"
-                >
-                  Cancel
-                </Button>
-              </>
-            ) : (
-              <>
-                <h1 className="text-3xl font-bold flex-grow">{video.title}</h1>
-                {video.isOwner && (
-                  <Button 
-                    size="icon" 
-                    variant="ghost" 
-                    onClick={() => setIsEditingTitle(true)}
-                    className="ml-2"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                )}
-              </>
-            )}
-          </div>
+              </div>
 
-          {/* Description with edit option */}
-          {isEditingDescription ? (
-            <div className="flex flex-col gap-2 mt-0">
-              <Textarea
-                value={editedDescription}
-                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setEditedDescription(e.target.value)}
-                className="min-h-[100px]"
-                placeholder="Add a description..."
-                disabled={isSaving}
-              />
+              <div className="mb-4">
+                <label
+                  htmlFor="description"
+                  className="block text-sm font-medium mb-1"
+                >
+                  Description
+                </label>
+                <Textarea
+                  id="description"
+                  value={editedDescription}
+                  onChange={(e) => setEditedDescription(e.target.value)}
+                  className="min-h-[100px] w-full"
+                  placeholder="Add a description..."
+                  disabled={isSaving}
+                />
+              </div>
+
               <div className="flex justify-end gap-2">
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  onClick={handleSaveDescription}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleSave}
                   disabled={isSaving}
                 >
                   Save
                 </Button>
-                <Button 
-                  size="sm" 
-                  variant="ghost" 
+                <Button
+                  size="sm"
+                  variant="ghost"
                   onClick={() => {
-                    setIsEditingDescription(false);
+                    setIsEditing(false);
+                    setEditedTitle(video.title);
                     setEditedDescription(video.description || "");
                   }}
                   disabled={isSaving}
@@ -287,75 +316,137 @@ export default function VideoPage() {
               </div>
             </div>
           ) : (
-            <div className="flex items-start mt-0">
-              <p className="text-gray-600 dark:text-gray-400 flex-grow my-auto">
-                {video.description || "No description"}
-              </p>
-              {video.isOwner && (
-                <Button 
-                  size="icon" 
-                  variant="ghost" 
-                  onClick={() => setIsEditingDescription(true)}
-                  className="ml-2 flex-shrink-0"
-                >
-                  <Pencil className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
+            <>
+              <div className="flex items-center mt-2">
+                <h1 className="text-3xl font-bold flex-grow">{video.title}</h1>
+                {video.isOwner && (
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => {
+                      setEditedTitle(video.title);
+                      setEditedDescription(video.description || "");
+                      setIsEditing(true);
+                    }}
+                    className="ml-2"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+              <div className="-mt-1">
+                <p className="text-gray-600 dark:text-gray-400">
+                  {video.description || "No description"}
+                </p>
+              </div>
+            </>
           )}
+
+          <hr className="my-6" />
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Caption Style</h3>
+              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                Caption Style
+              </h3>
               <p className="mt-1 capitalize">{video.captionStyle}</p>
             </div>
             <div>
-              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Voice</h3>
+              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                Voice
+              </h3>
               <p className="mt-1">{video.voice}</p>
             </div>
             <div>
-              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Status</h3>
+              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                Status
+              </h3>
               <p className="mt-1 capitalize">{video.status}</p>
             </div>
             <div>
-              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Created At</h3>
-              <p className="mt-1">{format(new Date(video.createdAt), "PPPP 'at' p")}</p>
+              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                Created At
+              </h3>
+              <p className="mt-1">
+                {format(new Date(video.createdAt), "PPPP 'at' p")}
+              </p>
             </div>
             <div className="col-span-2">
-              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Created By</h3>
+              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                Created By
+              </h3>
               <p className="mt-1">{video.creator?.name || "Unknown"}</p>
             </div>
           </div>
 
+          <hr className="my-6" />
+
+          <p className="text-sm text-muted-foreground mb-2">
+            <strong>Note:</strong> It may take three or more minutes to download
+            and render the video. Please be patient.
+          </p>
+
           {/* Action Buttons - placed just above Technical Details */}
           <div className="grid grid-cols-2 gap-4 mt-4">
-            {video.isOwner && video.status === "completed" && !video.downloadUrl && (
-              <RenderButton 
-                videoId={video.id} 
-                onVideoReady={handleVideoReady}
-                className="w-full col-span-2"
-              />
+            {video.isOwner &&
+              video.status === "completed" &&
+              !video.downloadUrl && (
+                <div className="col-span-2">
+                  {!isWorkflowInProgress && (
+                    <RenderButton
+                      videoId={video.id}
+                      onVideoReady={handleVideoReady}
+                      onClick={handleStartWorkflow}
+                      className="w-full"
+                    />
+                  )}
+                </div>
+              )}
+            {isWorkflowInProgress && (
+              <div className="col-span-2">
+                <p className="text-sm text-muted-foreground mb-2">
+                  <strong>Note:</strong> It may take three or more minutes to
+                  download and render the video. Please be patient.
+                </p>
+                <Button
+                  disabled
+                  size="sm"
+                  className="w-full flex items-center gap-2"
+                >
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  {workflowStatus === "queued"
+                    ? "In Queue..."
+                    : "Rendering in Progress..."}
+                </Button>
+              </div>
             )}
             {video.downloadUrl && (
-              <DownloadButton 
-                videoId={video.id} 
-                downloadUrl={video.downloadUrl} 
+              <DownloadButton
+                videoId={video.id}
+                downloadUrl={video.downloadUrl}
                 className="w-full col-span-2"
               />
             )}
             {/* Fill empty space with placeholders if buttons aren't shown */}
-            {!(video.isOwner && video.status === "completed") && <div></div>}
-            {!video.downloadUrl && <div></div>}
+            {!(video.isOwner && video.status === "completed") &&
+              !isWorkflowInProgress &&
+              !video.downloadUrl && <div></div>}
+            {!video.downloadUrl && !isWorkflowInProgress && <div></div>}
           </div>
-          
+
+          <hr className="my-6" />
+
           {/* Technical Details Collapsible */}
           <Collapsible
             open={showTechnicalDetails}
             onOpenChange={setShowTechnicalDetails}
-            className="space-y-4"
+            className="space-y-6"
           >
             <CollapsibleTrigger asChild>
-              <Button variant="outline" className="w-full flex justify-between items-center">
+              <Button
+                variant="outline"
+                className="w-full flex justify-between items-center"
+              >
                 <span>Technical Details</span>
                 {showTechnicalDetails ? (
                   <ChevronUp className="h-4 w-4" />
@@ -368,11 +459,17 @@ export default function VideoPage() {
               {/* Script */}
               <Collapsible
                 open={expandedSections.script}
-                onOpenChange={() => toggleSection('script')}
+                onOpenChange={() => toggleSection("script")}
+                className="border rounded-md p-2"
               >
                 <CollapsibleTrigger asChild>
-                  <Button variant="ghost" className="w-full flex justify-between items-center">
-                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Script</span>
+                  <Button
+                    variant="ghost"
+                    className="w-full flex justify-between items-center"
+                  >
+                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                      Script
+                    </span>
                     {expandedSections.script ? (
                       <ChevronUp className="h-4 w-4" />
                     ) : (
@@ -385,13 +482,17 @@ export default function VideoPage() {
                     <div className="divide-y">
                       {scenes.map((scene, index) => (
                         <div key={index} className="p-4">
-                          <h4 className="font-medium mb-2">Scene {index + 1}</h4>
+                          <h4 className="font-medium mb-2">
+                            Scene {index + 1}
+                          </h4>
                           <div className="space-y-2">
                             <p className="text-sm text-gray-600 dark:text-gray-400">
-                              <span className="font-medium">Content:</span> {scene.contentText}
+                              <span className="font-medium">Content:</span>{" "}
+                              {scene.contentText}
                             </p>
                             <p className="text-sm text-gray-600 dark:text-gray-400">
-                              <span className="font-medium">Image Prompt:</span> {scene.imagePrompt}
+                              <span className="font-medium">Image Prompt:</span>{" "}
+                              {scene.imagePrompt}
                             </p>
                           </div>
                         </div>
@@ -401,14 +502,22 @@ export default function VideoPage() {
                 </CollapsibleContent>
               </Collapsible>
 
+              <hr className="my-6" />
+
               {/* Audio */}
               <Collapsible
                 open={expandedSections.audio}
-                onOpenChange={() => toggleSection('audio')}
+                onOpenChange={() => toggleSection("audio")}
+                className="border rounded-md p-2"
               >
                 <CollapsibleTrigger asChild>
-                  <Button variant="ghost" className="w-full flex justify-between items-center">
-                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Audio</span>
+                  <Button
+                    variant="ghost"
+                    className="w-full flex justify-between items-center"
+                  >
+                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                      Audio
+                    </span>
                     {expandedSections.audio ? (
                       <ChevronUp className="h-4 w-4" />
                     ) : (
@@ -426,14 +535,22 @@ export default function VideoPage() {
                 </CollapsibleContent>
               </Collapsible>
 
+              <hr className="my-6" />
+
               {/* Images */}
               <Collapsible
                 open={expandedSections.images}
-                onOpenChange={() => toggleSection('images')}
+                onOpenChange={() => toggleSection("images")}
+                className="border rounded-md p-2"
               >
                 <CollapsibleTrigger asChild>
-                  <Button variant="ghost" className="w-full flex justify-between items-center">
-                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Images</span>
+                  <Button
+                    variant="ghost"
+                    className="w-full flex justify-between items-center"
+                  >
+                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                      Images
+                    </span>
                     {expandedSections.images ? (
                       <ChevronUp className="h-4 w-4" />
                     ) : (
@@ -444,7 +561,10 @@ export default function VideoPage() {
                 <CollapsibleContent>
                   <div className="grid grid-cols-2 gap-4 mt-2">
                     {video.imageUrls.map((url: string, index: number) => (
-                      <Card key={index} className="relative aspect-[9/16] overflow-hidden">
+                      <Card
+                        key={index}
+                        className="relative aspect-[9/16] overflow-hidden"
+                      >
                         <Image
                           src={url}
                           alt={`Scene ${index + 1}`}

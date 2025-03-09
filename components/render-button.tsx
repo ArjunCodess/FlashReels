@@ -7,16 +7,22 @@ import { useToast } from "@/components/ui/use-toast";
 interface RenderButtonProps {
   videoId: string;
   onVideoReady?: (downloadUrl: string) => void;
+  onClick?: () => void;
   className?: string;
 }
 
-export const RenderButton: React.FC<RenderButtonProps> = ({ videoId, onVideoReady, className }) => {
+export const RenderButton: React.FC<RenderButtonProps> = ({ videoId, onVideoReady, onClick, className }) => {
   const [isRendering, setIsRendering] = useState(false);
   const { toast } = useToast();
 
   const handleRender = async () => {
     try {
       setIsRendering(true);
+      
+      // Call the onClick handler if provided
+      if (onClick) {
+        onClick();
+      }
       
       // Call the render API endpoint
       await axios.post(`/api/videos/${videoId}/render`, {
