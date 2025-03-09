@@ -54,7 +54,6 @@ export async function POST(
 
     // Create GitHub workflow dispatch payload
     const payload = {
-      ref: "add-remotion-action", // Use your current branch name
       inputs: {
         videoId,
         width: width.toString(),
@@ -76,7 +75,7 @@ export async function POST(
     }
 
     // Log the GitHub repo and workflow we're trying to access (for debugging)
-    console.log(`Attempting to trigger workflow in repo: ${githubRepo}, branch: ${payload.ref}`);
+    console.log(`Attempting to trigger workflow in repo: ${githubRepo}`);
     console.log(`Using token: ${githubToken ? 'Token exists (first 4 chars: ' + githubToken.substring(0, 4) + '...)' : 'No token found'}`);
     
     try {
