@@ -115,7 +115,7 @@ export async function PATCH(req: Request) {
             return new NextResponse("Unauthorized", { status: 401 });
         }
 
-        const { id, status, title, description } = await req.json();
+        const { id, status, title, description, downloadUrl } = await req.json();
         
         if (!id) {
             return new NextResponse("Video ID is required", { status: 400 });
@@ -141,6 +141,7 @@ export async function PATCH(req: Request) {
         if (status) updateData.status = status;
         if (title) updateData.title = title;
         if (description !== undefined) updateData.description = description;
+        if (downloadUrl !== undefined) updateData.downloadUrl = downloadUrl;
 
         // Only update if there are fields to update
         if (Object.keys(updateData).length === 0) {

@@ -12,7 +12,7 @@ export const Videos = pgTable('videos', {
     id: uuid('id').primaryKey().defaultRandom(),
     title: varchar('title').notNull().default('Untitled Video'),
     description: text('description'),
-    script: varchar('script').notNull(),
+    script: jsonb('script').notNull(),
     audioUrl: varchar('audioUrl').notNull(),
     captions: jsonb('captions').notNull(),
     imageUrls: varchar('imageUrls').notNull().array(),
@@ -20,5 +20,6 @@ export const Videos = pgTable('videos', {
     captionStyle: varchar('captionStyle').notNull().default('classic'),
     createdAt: timestamp('createdAt').defaultNow().notNull(),
     status: varchar('status').notNull().default('generating'),
+    downloadUrl: varchar('downloadUrl'),
     createdBy: uuid('createdBy').notNull().references(() => Users.id),
 })

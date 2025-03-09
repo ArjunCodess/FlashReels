@@ -18,8 +18,9 @@ on:
         description: 'Frames per second'
         required: false
         default: '30'
+      # Keep duration input for backward compatibility, but we won't use it
       duration:
-        description: 'Duration in seconds'
+        description: 'Duration in seconds (will be automatically calculated from captions)'
         required: false
         default: '30'
 
@@ -139,7 +140,8 @@ jobs:
                 audioUrl: videoData.audioUrl || "",
                 captions: videoData.captions || [],
                 script: videoData.script || "",
-                voice: videoData.voice || ""
+                voice: videoData.voice || "",
+                captionStyle: videoData.captionStyle || "classic"
               };
               
               fs.writeFileSync('video-data.json', JSON.stringify(remotionProps, null, 2));
@@ -151,10 +153,55 @@ jobs:
           fetchVideoData();
           EOF
 
+      # Create script to calculate duration from captions
+      - name: Create duration calculation script
+        run: |
+          cat > scripts/calculate-duration.js << 'EOF'
+          // Script to calculate video duration based on captions
+          const fs = require('fs');
+          
+          try {
+            // Read video data JSON file
+            const videoData = JSON.parse(fs.readFileSync('video-data.json', 'utf8'));
+            const captions = videoData.captions || [];
+            const fps = process.argv[2] || 30;
+            
+            // Debug output of captions structure
+            console.log('DEBUG: Video data structure:');
+            console.log('DEBUG: captions array length =', captions.length);
+            if (captions.length > 0) {
+              console.log('DEBUG: First caption =', JSON.stringify(captions[0]));
+              console.log('DEBUG: Last caption =', JSON.stringify(captions[captions.length - 1]));
+            }
+            
+            if (captions.length === 0) {
+              console.log('No captions found, using default duration');
+              console.log(30 * fps); // Default 30 seconds in frames
+              process.exit(0);
+            }
+            
+            // Get the last caption's end time
+            const lastCaption = captions[captions.length - 1];
+            const lastCaptionEndTime = lastCaption.end;
+            
+            // Calculate duration in frames - EXACT match to root.tsx calculation
+            // Use Number(x.toFixed(0)) instead of Math.round() to match root.tsx exactly
+            const durationInFrames = Number((lastCaptionEndTime * fps).toFixed(0)) + 20;
+            
+            console.log(`Last caption ends at ${lastCaptionEndTime} seconds`);
+            console.log(`Calculated duration: ${durationInFrames} frames (${durationInFrames/fps} seconds)`);
+            console.log(durationInFrames);
+          } catch (error) {
+            console.error('Error calculating duration:', error.message);
+            console.log(30 * process.argv[2] || 900); // Default to 30 seconds if error
+            process.exit(1);
+          }
+          EOF
+
       # Verify the script content
       - name: Verify script content
         run: |
-          echo "First 10 lines of the script:"
+          echo "First 10 lines of the fetch script:"
           head -n 10 scripts/fetch-video-data.js
           echo "Script file size: $(wc -c < scripts/fetch-video-data.js) bytes"
           echo "Script file permissions: $(ls -la scripts/fetch-video-data.js)"
@@ -179,8 +226,33 @@ jobs:
         env:
           API_URL: ${{ secrets.API_URL }}
 
+      # New step to validate the video-data.json file
+      - name: Validate video data
+        run: |
+          echo "Validating video-data.json content..."
+          jq . video-data.json
+          echo "Checking captions structure..."
+          jq '.captions | length' video-data.json
+          echo "First caption:"
+          jq '.captions[0]' video-data.json
+          echo "Last caption:"
+          jq '.captions[-1]' video-data.json
+
+      - name: Calculate video duration
+        id: duration
+        run: |
+          chmod +x scripts/calculate-duration.js
+          DURATION_FRAMES=$(node ./scripts/calculate-duration.js ${{ github.event.inputs.fps }})
+          echo "Calculated duration in frames: $DURATION_FRAMES"
+          echo "duration_frames=$DURATION_FRAMES" >> $GITHUB_OUTPUT
+          
+          # For debugging: Also calculate using the old formula
+          echo "Sanity check: Old calculation would result in:"
+          echo "$(echo "${{ github.event.inputs.duration }} * ${{ github.event.inputs.fps }}" | bc) frames"
+
       - name: Render video
         run: |
+          echo "Rendering video with duration: ${{ steps.duration.outputs.duration_frames }} frames"
           npx remotion render \
             remotion/index.ts \
             FlashReelVideo \
@@ -189,7 +261,7 @@ jobs:
             --width=${{ github.event.inputs.width }} \
             --height=${{ github.event.inputs.height }} \
             --fps=${{ github.event.inputs.fps }} \
-            --duration=$(echo "${{ github.event.inputs.duration }} * ${{ github.event.inputs.fps }}" | bc)
+            --duration=${{ steps.duration.outputs.duration_frames }}
 
       - name: Upload rendered video
         uses: actions/upload-artifact@v4

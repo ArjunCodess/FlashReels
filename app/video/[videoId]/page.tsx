@@ -18,6 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
 import RemotionVideoPlayer from "@/components/video/video-player";
 import { RenderButton } from "@/components/render-button";
+import { DownloadButton } from "@/components/download-button";
 
 interface Caption {
   word: string;
@@ -52,6 +53,7 @@ interface VideoDetails {
   createdAt: string;
   status: string;
   createdBy: string;
+  downloadUrl: string | null;
   creator: Creator | null;
   isOwner: boolean;
 }
@@ -169,6 +171,16 @@ export default function VideoPage() {
     }
   };
 
+  // Add a handler for when video is ready with download URL
+  const handleVideoReady = (downloadUrl: string) => {
+    if (video) {
+      setVideo({
+        ...video,
+        downloadUrl
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -194,61 +206,57 @@ export default function VideoPage() {
         <RemotionVideoPlayer video={video} />
 
         {/* Right Column - Video Details */}
-        <div className="space-y-6 col-span-3">
+        <div className="space-y-3 col-span-3">
           {/* Title with edit option */}
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex items-center mt-6">
             {isEditingTitle ? (
-              <div className="flex-1 flex space-x-2">
+              <>
                 <Input
+                  type="text"
                   value={editedTitle}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditedTitle(e.target.value)}
-                  className="flex-1"
+                  onChange={(e) => setEditedTitle(e.target.value)}
+                  className="text-3xl font-bold flex-grow focus:outline-none"
                   disabled={isSaving}
                 />
                 <Button 
-                  size="sm" 
-                  variant="ghost" 
+                  size="sm"
+                  variant="outline" 
                   onClick={handleSaveTitle}
                   disabled={isSaving}
+                  className="ml-2"
                 >
                   Save
                 </Button>
                 <Button 
-                  size="sm" 
+                  size="sm"
                   variant="ghost" 
-                  onClick={() => {
-                    setIsEditingTitle(false);
-                    setEditedTitle(video.title);
-                  }}
+                  onClick={() => setIsEditingTitle(false)}
                   disabled={isSaving}
+                  className="ml-2"
                 >
                   Cancel
                 </Button>
-              </div>
+              </>
             ) : (
-              <div className="flex items-center space-x-4 flex-1">
-                <h1 className="text-3xl font-bold">{video.title}</h1>
+              <>
+                <h1 className="text-3xl font-bold flex-grow">{video.title}</h1>
                 {video.isOwner && (
                   <Button 
-                    size="sm" 
+                    size="icon" 
                     variant="ghost" 
                     onClick={() => setIsEditingTitle(true)}
+                    className="ml-2"
                   >
                     <Pencil className="h-4 w-4" />
                   </Button>
                 )}
-              </div>
-            )}
-            
-            {/* Add the RenderButton here */}
-            {video.isOwner && video.status === "completed" && (
-              <RenderButton videoId={video.id} />
+              </>
             )}
           </div>
 
           {/* Description with edit option */}
           {isEditingDescription ? (
-            <div className="flex flex-col gap-2 mt-2">
+            <div className="flex flex-col gap-2 mt-0">
               <Textarea
                 value={editedDescription}
                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setEditedDescription(e.target.value)}
@@ -279,8 +287,8 @@ export default function VideoPage() {
               </div>
             </div>
           ) : (
-            <div className="flex items-start gap-2 mt-2">
-              <p className="text-gray-600 dark:text-gray-400">
+            <div className="flex items-start mt-0">
+              <p className="text-gray-600 dark:text-gray-400 flex-grow my-auto">
                 {video.description || "No description"}
               </p>
               {video.isOwner && (
@@ -288,6 +296,7 @@ export default function VideoPage() {
                   size="icon" 
                   variant="ghost" 
                   onClick={() => setIsEditingDescription(true)}
+                  className="ml-2 flex-shrink-0"
                 >
                   <Pencil className="h-4 w-4" />
                 </Button>
@@ -317,6 +326,21 @@ export default function VideoPage() {
               <p className="mt-1">{video.creator?.name || "Unknown"}</p>
             </div>
           </div>
+
+          {/* Action Buttons - placed just above Technical Details */}
+          <div className="grid grid-cols-2 gap-4 mt-4">
+            {video.isOwner && video.status === "completed" && (
+              <RenderButton videoId={video.id} onVideoReady={handleVideoReady} />
+            )}
+            {video.downloadUrl && (
+              <DownloadButton videoId={video.id} downloadUrl={video.downloadUrl} />
+            )}
+            {/* Fill empty space with placeholders if buttons aren't shown */}
+            {!(video.isOwner && video.status === "completed") && <div></div>}
+            {!video.downloadUrl && <div></div>}
+          </div>
+
+          
 
           {/* Technical Details Collapsible */}
           <Collapsible
