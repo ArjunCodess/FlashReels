@@ -1,9 +1,21 @@
 import VideoComposition from "./composition";
 import React from "react";
-import { Composition } from "remotion";
+import { Composition, staticFile } from "remotion";
+import { Video } from "@/components/video/video-player";
+
+// Add global type declaration for Remotion's window.remotion_props
+declare global {
+  interface Window {
+    // More specific type for Remotion props that includes the expected structure
+    remotion_props: {
+      video?: Video;
+    } | null;
+  }
+}
 
 export const RemotionRoot: React.FC = () => {
-  const video = {
+  // Sample data for development - will be replaced in production
+  const sampleVideo: Video = {
     id: "147d497b-7663-4b6d-974a-9761422c9ff3",
     title: "Historical Facts",
     description:
@@ -854,28 +866,75 @@ export const RemotionRoot: React.FC = () => {
         punctuated_word: "aviation.",
       },
     ],
-    script:
-      "The Great Pyramid of Giza, built over 4,500 years ago, took around 20 years to construct.",
-    voice: "en-AU-NatashaNeural",
-    captionStyle: "supreme",
+    script: "",
+    voice: "onyx",
+    captionStyle: "classic",
     createdAt: new Date().toISOString(),
     status: "completed",
-    createdBy: "738289f7-dc62-43f4-97ef-05646f2a2af6",
+    createdBy: "sample-user-id"
   };
 
-  const captions = video.captions;
+  // Get props using the method described in Remotion docs for SSR
+  // https://www.remotion.dev/docs/ssr#render-using-github-actions
+  // https://www.remotion.dev/docs/passing-props#passing-input-props-in-github-actions
+  const propsFromWindow = typeof window !== 'undefined' && window.remotion_props ? window.remotion_props : null;
+  
+  // Use either window props or sample data for development
+  const videoProps = propsFromWindow || { video: sampleVideo };
+  
+  // Extract video data, ensuring correct structure regardless of source
+  const videoData = videoProps.video || sampleVideo;
+  
+  // Get captions with safety check
+  const captions = videoData.captions || [];
+  
+  // Use the exact same duration calculation as the player component
+  const lastCaptionEnd = captions.length > 0 ? captions[captions.length - 1].end : 10;
+  const durationInFrames = Number((lastCaptionEnd * 30).toFixed(0)) + 10;
+  
+  console.log("RemotionRoot rendering with:", {
+    propsSource: propsFromWindow ? "SSR" : "Development",
+    videoId: videoData.id,
+    duration: `${durationInFrames} frames (${durationInFrames/30}s)`,
+    captionsCount: captions.length
+  });
 
   return (
-    <Composition
-      id="FlashReelVideo"
-      component={VideoComposition}
-      durationInFrames={Number((captions[captions.length - 1].end * 30).toFixed(0)) + 20}
-      fps={30}
-      width={720}
-      height={1280}
-      defaultProps={{ 
-        video 
-      }}
-    />
+    <>
+      {/* Add font styles */}
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          @font-face {
+            font-family: 'Geist';
+            src: url(${staticFile('/fonts/Geist-Regular.woff2')}) format('woff2');
+            font-weight: normal;
+            font-style: normal;
+          }
+          @font-face {
+            font-family: 'Geist';
+            src: url(${staticFile('/fonts/Geist-Bold.woff2')}) format('woff2');
+            font-weight: bold;
+            font-style: normal;
+          }
+          @font-face {
+            font-family: 'Geist';
+            src: url(${staticFile('/fonts/Geist-Light.woff2')}) format('woff2');
+            font-weight: 300;
+            font-style: normal;
+          }
+        `
+      }} />
+      <Composition
+        id="FlashReelRenderedVideo"
+        component={VideoComposition}
+        durationInFrames={durationInFrames}
+        fps={30}
+        width={720}
+        height={1280}
+        defaultProps={{ 
+          video: videoData
+        }}
+      />
+    </>
   );
 };

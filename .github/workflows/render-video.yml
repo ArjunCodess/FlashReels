@@ -9,11 +9,11 @@ on:
       width:
         description: 'Video width in pixels'
         required: false
-        default: '1080'
+        default: '720'
       height:
         description: 'Video height in pixels'
         required: false
-        default: '1920'
+        default: '1280'
       fps:
         description: 'Frames per second'
         required: false
@@ -116,14 +116,20 @@ jobs:
                 
                 // Create a fallback object with the videoId
                 const fallbackData = {
-                  videoId: videoId,
-                  title: "Video not found",
-                  description: null,
-                  imageUrls: [],
-                  audioUrl: "",
-                  captions: [],
-                  script: "",
-                  voice: ""
+                  video: {
+                    id: videoId,
+                    title: "Video not found",
+                    description: null,
+                    imageUrls: [],
+                    audioUrl: "",
+                    captions: [],
+                    script: "",
+                    voice: "",
+                    captionStyle: "classic",
+                    status: "error",
+                    createdAt: new Date().toISOString(),
+                    createdBy: ""
+                  }
                 };
                 
                 fs.writeFileSync('video-data.json', JSON.stringify(fallbackData, null, 2));
@@ -133,17 +139,23 @@ jobs:
               
               // Extract only the needed properties for Remotion rendering
               const remotionProps = {
-                videoId: videoData.id,
-                title: videoData.title,
-                description: videoData.description,
-                imageUrls: videoData.imageUrls || [],
-                audioUrl: videoData.audioUrl || "",
-                captions: videoData.captions || [],
-                script: videoData.script || "",
-                voice: videoData.voice || "",
-                captionStyle: videoData.captionStyle || "classic"
+                video: {
+                  id: videoData.id,
+                  title: videoData.title,
+                  description: videoData.description,
+                  imageUrls: videoData.imageUrls || [],
+                  audioUrl: videoData.audioUrl || "",
+                  captions: videoData.captions || [],
+                  script: videoData.script || "",
+                  voice: videoData.voice || "",
+                  captionStyle: videoData.captionStyle || "classic",
+                  status: videoData.status || "",
+                  createdAt: videoData.createdAt || new Date().toISOString(),
+                  createdBy: videoData.createdBy || ""
+                }
               };
               
+              // Save props in the format Remotion expects according to the docs
               fs.writeFileSync('video-data.json', JSON.stringify(remotionProps, null, 2));
               console.log('Video data saved to video-data.json');
             });
@@ -162,17 +174,21 @@ jobs:
           
           try {
             // Read video data JSON file
-            const videoData = JSON.parse(fs.readFileSync('video-data.json', 'utf8'));
+            const rawData = JSON.parse(fs.readFileSync('video-data.json', 'utf8'));
+            
+            // Extract video object following the exact structure as defined in Remotion docs
+            if (!rawData.video) {
+              throw new Error('Invalid props structure: missing video object');
+            }
+            
+            const videoData = rawData.video;
             const captions = videoData.captions || [];
             const fps = process.argv[2] || 30;
             
-            // Debug output of captions structure
-            console.log('DEBUG: Video data structure:');
-            console.log('DEBUG: captions array length =', captions.length);
-            if (captions.length > 0) {
-              console.log('DEBUG: First caption =', JSON.stringify(captions[0]));
-              console.log('DEBUG: Last caption =', JSON.stringify(captions[captions.length - 1]));
-            }
+            // Debug output of structure
+            console.log('DEBUG: Props structure validated, found video object');
+            console.log('DEBUG: Video ID =', videoData.id);
+            console.log('DEBUG: Captions count =', captions.length);
             
             if (captions.length === 0) {
               console.log('No captions found, using default duration');
@@ -184,16 +200,15 @@ jobs:
             const lastCaption = captions[captions.length - 1];
             const lastCaptionEndTime = lastCaption.end;
             
-            // Calculate duration in frames - EXACT match to root.tsx calculation
-            // Use Number(x.toFixed(0)) instead of Math.round() to match root.tsx exactly
-            const durationInFrames = Number((lastCaptionEndTime * fps).toFixed(0)) + 20;
+            // Calculate duration in frames exactly matching the player calculation
+            const durationInFrames = Number((lastCaptionEndTime * fps).toFixed(0)) + 10;
             
             console.log(`Last caption ends at ${lastCaptionEndTime} seconds`);
             console.log(`Calculated duration: ${durationInFrames} frames (${durationInFrames/fps} seconds)`);
             console.log(durationInFrames);
           } catch (error) {
             console.error('Error calculating duration:', error.message);
-            console.log(30 * process.argv[2] || 900); // Default to 30 seconds if error
+            console.log(30 * (process.argv[2] || 30)); // Default to 30 seconds if error
             process.exit(1);
           }
           EOF
@@ -231,20 +246,28 @@ jobs:
         run: |
           echo "Validating video-data.json content..."
           jq . video-data.json
+          echo "Checking video object structure..."
+          jq '.video | type' video-data.json
           echo "Checking captions structure..."
-          jq '.captions | length' video-data.json
+          jq '.video.captions | length' video-data.json
           echo "First caption:"
-          jq '.captions[0]' video-data.json
+          jq '.video.captions[0]' video-data.json
           echo "Last caption:"
-          jq '.captions[-1]' video-data.json
+          jq '.video.captions[-1]' video-data.json
+          echo "Checking for required fields:"
+          jq '.video | has("captionStyle")' video-data.json
+          jq '.video | has("status")' video-data.json
+          jq '.video | has("createdAt")' video-data.json
 
       - name: Calculate video duration
         id: duration
         run: |
           chmod +x scripts/calculate-duration.js
           DURATION_FRAMES=$(node ./scripts/calculate-duration.js ${{ github.event.inputs.fps }})
-          echo "Calculated duration in frames: $DURATION_FRAMES"
-          echo "duration_frames=$DURATION_FRAMES" >> $GITHUB_OUTPUT
+          # Add only 10 frames buffer instead of 20 to match the player
+          DURATION_WITH_BUFFER=$((DURATION_FRAMES + 10))
+          echo "Calculated duration in frames: $DURATION_WITH_BUFFER (base: $DURATION_FRAMES + 10 frame buffer)"
+          echo "duration_frames=$DURATION_WITH_BUFFER" >> $GITHUB_OUTPUT
           
           # For debugging: Also calculate using the old formula
           echo "Sanity check: Old calculation would result in:"
@@ -253,15 +276,21 @@ jobs:
       - name: Render video
         run: |
           echo "Rendering video with duration: ${{ steps.duration.outputs.duration_frames }} frames"
+          # Log the props file content for debugging
+          echo "Using props from video-data.json:"
+          cat video-data.json
+          
+          # Render using the exact same approach recommended in Remotion docs
           npx remotion render \
             remotion/index.ts \
-            FlashReelVideo \
+            FlashReelRenderedVideo \
             output/video-${{ github.event.inputs.videoId }}.mp4 \
             --props="./video-data.json" \
             --width=${{ github.event.inputs.width }} \
             --height=${{ github.event.inputs.height }} \
             --fps=${{ github.event.inputs.fps }} \
-            --duration=${{ steps.duration.outputs.duration_frames }}
+            --duration=${{ steps.duration.outputs.duration_frames }} \
+            --log=verbose
 
       - name: Upload rendered video
         uses: actions/upload-artifact@v4
