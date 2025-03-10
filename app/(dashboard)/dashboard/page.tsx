@@ -15,6 +15,7 @@ interface RawVideoData {
   imageUrls?: string[] | string | null;
   createdAt?: string;
   status?: string;
+  isFavourite?: boolean;
   [key: string]: unknown; // Allow for other properties with unknown type
 }
 
@@ -31,7 +32,8 @@ export default function Dashboard() {
       title: video.title || 'Untitled Video',
       description: video.description || null,
       status: video.status || 'completed',
-      createdAt: video.createdAt || new Date().toISOString()
+      createdAt: video.createdAt || new Date().toISOString(),
+      isFavourite: video.isFavourite || false
     };
   }, []);
 
@@ -63,7 +65,17 @@ export default function Dashboard() {
       }
       setError(null);
       
-      const response = await axios.get('/api/videos');
+      // Add cache prevention parameters to ensure we get fresh data
+      const response = await axios.get('/api/videos', {
+        params: {
+          _t: new Date().getTime() // Add timestamp to prevent caching
+        },
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
       
       // Process the videos to ensure they have all required fields
       const processedVideos = response.data.map(processVideoData);
@@ -93,9 +105,9 @@ export default function Dashboard() {
   }, [fetchVideos]);
 
   return (
-    <div className="pt-4 pb-6 px-4 mx-auto">
+    <div className="pt-4 pb-8 px-8 mx-auto">
       <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">My Videos</h1>
+      <h1 className="text-2xl font-bold mt-2 mb-4">My Videos</h1>
         <Button>
           <Link href="create-new">Create New</Link>
         </Button>

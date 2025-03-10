@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, timestamp, text, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, uuid, varchar, timestamp, text, jsonb, primaryKey, index } from "drizzle-orm/pg-core";
 
 export const Users = pgTable('users', {
     id: uuid('id').primaryKey().defaultRandom(),
@@ -23,3 +23,13 @@ export const Videos = pgTable('videos', {
     downloadUrl: varchar('downloadUrl'),
     createdBy: uuid('createdBy').notNull().references(() => Users.id),
 })
+
+export const Favourites = pgTable('favourites', {
+    userId: uuid('userId').notNull().references(() => Users.id),
+    videoId: uuid('videoId').notNull().references(() => Videos.id),
+    createdAt: timestamp('createdAt').defaultNow().notNull(),
+}, (table) => ({
+    pk: primaryKey({ columns: [table.userId, table.videoId] }),
+    userIdx: index('favourites_user_idx').on(table.userId),
+    videoIdx: index('favourites_video_idx').on(table.videoId),
+}))

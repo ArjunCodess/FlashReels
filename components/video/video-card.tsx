@@ -1,11 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
 import { Card } from "@/components/ui/card";
 import VideoStatusUpdater from "@/components/video/video-status-updater";
 import Link from "next/link";
+import { Heart } from "lucide-react";
 
 export interface VideoData {
   id: string;
@@ -14,6 +15,7 @@ export interface VideoData {
   imageUrls: string[];
   createdAt: string;
   status: string;
+  isFavourite?: boolean;
 }
 
 interface VideoCardProps {
@@ -21,6 +23,14 @@ interface VideoCardProps {
 }
 
 export default function VideoCard({ video }: VideoCardProps) {
+  const [isFavourite, setIsFavourite] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // Use useEffect to update the local state when the video prop changes
+  useEffect(() => {
+    setIsFavourite(!!video.isFavourite);
+  }, [video.isFavourite]);
+  
   const getThumbnail = (video: VideoData) => {
     return video.imageUrls && video.imageUrls.length > 0 ? video.imageUrls[0] : null;
   };
@@ -31,6 +41,42 @@ export default function VideoCard({ video }: VideoCardProps) {
     } catch (err) {
       console.error('Error formatting date:', err);
       return 'recently';
+    }
+  };
+
+  const toggleFavourite = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (isLoading) return;
+    
+    setIsLoading(true);
+    
+    try {
+      // Optimistically update the UI immediately for better user experience
+      setIsFavourite(!isFavourite);
+      
+      const response = await fetch(`/api/favourites/${video.id}`, { 
+        method: 'POST',
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        // If the server response differs from our optimistic update, correct it
+        if (data.isFavourite !== !isFavourite) {
+          setIsFavourite(data.isFavourite);
+        }
+      } else {
+        // Revert optimistic update if request failed
+        setIsFavourite(!isFavourite);
+        console.error('Failed to toggle favourite status');
+      }
+    } catch (error) {
+      // Revert optimistic update if request failed
+      setIsFavourite(!isFavourite);
+      console.error('Error toggling favourite:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -55,6 +101,17 @@ export default function VideoCard({ video }: VideoCardProps) {
         
         {/* Gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/0 via-black/0 to-black/60" />
+        
+        {/* Favourite button */}
+        <button 
+          onClick={toggleFavourite}
+          disabled={isLoading}
+          className="absolute top-4 right-4 p-2 rounded-full bg-black/30 hover:bg-black/50 transition-colors z-10"
+        >
+          <Heart 
+            className={`w-5 h-5 ${isFavourite ? 'fill-red-500 text-red-500' : 'text-white'} ${isLoading ? 'opacity-50' : ''}`} 
+          />
+        </button>
         
         {/* Content overlay */}
         <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
