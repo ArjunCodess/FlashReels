@@ -67,15 +67,15 @@ export const RenderButton: React.FC<RenderButtonProps> = ({ videoId, onVideoRead
                 }
               } else {
                 // If the download URL is not available yet, check again after some time
-                setTimeout(checkWorkflowStatus, 30000); // Check every 30 seconds
+                setTimeout(checkWorkflowStatus, 10000); // Check every 10 seconds
               }
             } catch (error) {
               console.error("Error checking workflow status:", error);
             }
           };
           
-          // Start polling after 30 seconds
-          setTimeout(checkWorkflowStatus, 30000);
+          // Start polling after 5 seconds
+          setTimeout(checkWorkflowStatus, 5000);
         } catch (error) {
           console.error("Error setting up workflow status check:", error);
         }
@@ -107,7 +107,7 @@ export const RenderButton: React.FC<RenderButtonProps> = ({ videoId, onVideoRead
       {isRendering ? (
         <>
           <Loader2 className="h-4 w-4 animate-spin" />
-          Rendering...
+          Starting render...
         </>
       ) : (
         <>

@@ -82,8 +82,7 @@ export async function GET(
     // First, get all render video workflow runs
     const allWorkflowRuns = runsResponse.data.workflow_runs.filter(
       (run: GitHubWorkflowRun) => run.name === "Render Video" && 
-        run.event === "workflow_dispatch" && 
-        run.status === "completed"
+        run.event === "workflow_dispatch"
     );
 
     // Sort runs by created_at, most recent first
@@ -93,6 +92,8 @@ export async function GET(
 
     // Try to find a run specifically for this videoId by checking inputs
     let videoRun: GitHubWorkflowRun | null = null;
+    let progressPercentage = 0;
+    
     for (const run of allWorkflowRuns) {
       try {
         // Make a request to get the workflow run details which includes inputs
@@ -108,6 +109,24 @@ export async function GET(
         const workflowRun = runDetails.data.workflow_run;
         if (workflowRun.inputs && workflowRun.inputs.videoId === videoId) {
           videoRun = workflowRun;
+          
+          // Calculate progress percentage based on time elapsed since the workflow started
+          // This is a time-based estimation since we can't directly get render progress from GitHub
+          if (workflowRun.status === "in_progress" || workflowRun.status === "queued") {
+            const startTime = new Date(workflowRun.created_at).getTime();
+            const currentTime = new Date().getTime();
+            
+            // Assume the workflow takes around 3 minutes (180000ms) to complete
+            // This is an estimation and can be adjusted based on actual rendering times
+            const estimatedTotalTime = 180000;
+            const elapsedTime = currentTime - startTime;
+            
+            // Calculate percentage with a maximum of 95% (to avoid showing 100% before it's actually done)
+            progressPercentage = Math.min(Math.floor((elapsedTime / estimatedTotalTime) * 100), 95);
+          } else if (workflowRun.status === "completed" && workflowRun.conclusion === "success") {
+            progressPercentage = 100;
+          }
+          
           break;
         }
       } catch (error) {
@@ -119,12 +138,26 @@ export async function GET(
     // If we didn't find a specific run for this videoId, just use the most recent one
     if (!videoRun && allWorkflowRuns.length > 0) {
       videoRun = allWorkflowRuns[0];
+      
+      // Set a default progress for this case
+      if (videoRun.status === "in_progress") {
+        const startTime = new Date(videoRun.created_at).getTime();
+        const currentTime = new Date().getTime();
+        const estimatedTotalTime = 180000;
+        const elapsedTime = currentTime - startTime;
+        progressPercentage = Math.min(Math.floor((elapsedTime / estimatedTotalTime) * 100), 95);
+      } else if (videoRun.status === "completed" && videoRun.conclusion === "success") {
+        progressPercentage = 100;
+      }
     }
 
     // If no completed runs are found
     if (!videoRun) {
       return NextResponse.json(
-        { message: "No completed render workflows found" },
+        { 
+          message: "No completed render workflows found",
+          progressPercentage: 0
+        },
         { status: 200 }
       );
     }
@@ -147,15 +180,13 @@ export async function GET(
       (artifact: GitHubArtifact) => artifact.name.includes(videoId) || artifact.name.includes("rendered-video")
     );
 
-    if (!videoArtifact) {
-      return NextResponse.json(
-        { message: "No artifacts found for this video" },
-        { status: 200 }
-      );
+    let downloadUrl = null;
+    
+    if (videoArtifact) {
+      // Create a direct download URL
+      downloadUrl = videoArtifact.archive_download_url;
+      progressPercentage = 100; // If we have an artifact, the render is complete
     }
-
-    // Create a direct download URL
-    const downloadUrl = videoArtifact.archive_download_url;
 
     // Update the video in the database with the downloadUrl
     if (downloadUrl) {
@@ -194,7 +225,8 @@ export async function GET(
       updated_at: videoRun.updated_at,
       downloadUrl,
       workflow_id: videoRun.id,
-      artifacts_count: artifacts.length
+      artifacts_count: artifacts.length,
+      progressPercentage // Include the progress percentage in the response
     });
 
   } catch (error) {
@@ -203,7 +235,8 @@ export async function GET(
     return NextResponse.json(
       { 
         error: "Failed to check workflow status",
-        details: error instanceof Error ? error.message : "Unknown error"
+        details: error instanceof Error ? error.message : "Unknown error",
+        progressPercentage: 0
       }, 
       { status: 500 }
     );
