@@ -80,9 +80,14 @@ export default function Dashboard() {
       // Process the videos to ensure they have all required fields
       const processedVideos = response.data.map(processVideoData);
       
+      // Sort videos by createdAt in descending order (newest first)
+      const sortedVideos = [...processedVideos].sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      
       // Merge with existing videos to prevent unnecessary re-renders
       setVideoList(currentVideos => 
-        isInitialLoad ? processedVideos : mergeVideoLists(currentVideos, processedVideos)
+        isInitialLoad ? sortedVideos : mergeVideoLists(currentVideos, sortedVideos)
       );
     } catch (err) {
       console.error('Error fetching videos:', err);
