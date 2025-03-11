@@ -6,6 +6,7 @@ import Image from "next/image";
 import { TextEffect } from "@/components/ui/text-effect";
 import { AnimatedGroup } from "@/components/ui/animated-group";
 import { cn } from "@/lib/utils";
+import { Spotlight } from "@/components/ui/spotlight";
 
 const transitionVariants = {
   item: {
@@ -30,6 +31,7 @@ const transitionVariants = {
 export default function Home() {
   return (
     <main>
+      <Spotlight className="overflow-x-hidden" />
       <section className="pt-4 sm:pt-8 md:pt-12">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className="text-center mx-auto pb-6 sm:pb-8 md:pb-12 lg:pb-16">
