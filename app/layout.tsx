@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/providers/theme-provider";
 import Header from "@/components/header";
 import Script from "next/script";
 import { Toaster } from "@/components/ui/toaster";
+import Footer from "@/components/footer";
 
 const geist = Geist({
   subsets: ['latin'],
@@ -43,6 +44,7 @@ export default function RootLayout({
             <Provider>
               <Header />
               {children}
+              <Footer />
             </Provider>
           </ThemeProvider>
           <Toaster />

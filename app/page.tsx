@@ -32,7 +32,7 @@ export default function Home() {
   return (
     <main>
       <Spotlight className="overflow-x-hidden" />
-      <section className="pt-4 sm:pt-8 md:pt-12">
+      <section className="py-4 sm:py-8 md:py-12">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className="text-center mx-auto pb-6 sm:pb-8 md:pb-12 lg:pb-16">
             <TextEffect
@@ -52,9 +52,9 @@ export default function Home() {
               as="p"
               className="mx-auto mt-4 sm:mt-6 md:mt-8 max-w-3xl text-balance text-sm sm:text-base md:text-lg text-foreground/80 leading-relaxed px-4 sm:px-0"
             >
-              Transform your ideas into professional videos without technical skills. 
-              Our AI-powered platform makes it easy to create, edit, and share
-              scroll-stopping content that drives engagement.
+              Transform your ideas into professional videos without technical
+              skills. Our AI-powered platform makes it easy to create, edit, and
+              share scroll-stopping content that drives engagement.
             </TextEffect>
 
             <AnimatedGroup
@@ -71,7 +71,11 @@ export default function Home() {
               }}
               className="mt-6 sm:mt-10 flex flex-row items-center justify-center gap-4 px-4"
             >
-              <Button asChild size="lg" className="rounded-xl sm:text-base w-full sm:w-auto">
+              <Button
+                asChild
+                size="lg"
+                className="rounded-xl sm:text-base w-full sm:w-auto"
+              >
                 <Link href="/sign-up">
                   Start Creating Free
                   <ArrowRight className="ml-2 h-4 w-4" />
@@ -102,7 +106,7 @@ export default function Home() {
             ...transitionVariants,
           }}
         >
-          <div className="mt-2 overflow-hidden px-2 sm:px-4 md:px-6 lg:px-8 pb-8 sm:pb-12 md:pb-16">
+          <div className="mt-2 overflow-hidden px-2 sm:px-4 md:px-6 lg:px-8">
             <div
               className={cn(
                 "relative mx-auto max-w-6xl overflow-hidden rounded-xl sm:rounded-2xl border-2 p-1 sm:p-2 md:p-4",
