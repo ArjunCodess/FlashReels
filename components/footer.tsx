@@ -22,7 +22,7 @@ const links = [
 
 export default function Footer() {
   return (
-    <footer className="py-16 border-t">
+    <footer className="shadow-sm border py-14 rounded-md mb-2">
       <div className="mx-auto max-w-5xl px-6">
         <Link href="/" className="mx-auto block size-fit">
           <Image src="/logo.svg" alt="Flash Reels" width={40} height={40} />

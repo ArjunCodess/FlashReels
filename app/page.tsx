@@ -2,11 +2,11 @@ import React from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import Image from "next/image";
 import { TextEffect } from "@/components/ui/text-effect";
 import { AnimatedGroup } from "@/components/ui/animated-group";
 import { cn } from "@/lib/utils";
 import { Spotlight } from "@/components/ui/spotlight";
+import HeroImage from "@/components/hero-image";
 
 const transitionVariants = {
   item: {
@@ -114,25 +114,7 @@ export default function Home() {
                 "dark:bg-background/30 dark:backdrop-blur-sm dark:ring-white/10"
               )}
             >
-              <Image
-                className="aspect-[16/9] w-full relative hidden rounded-lg sm:rounded-xl dark:block"
-                src="/dark.png"
-                alt="Application dashboard"
-                width={2700}
-                height={1440}
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 90vw, 1200px"
-                priority
-              />
-
-              <Image
-                className="aspect-[16/9] w-full relative rounded-lg sm:rounded-xl border border-border/20 dark:hidden"
-                src="/light.png"
-                alt="Application dashboard"
-                width={2700}
-                height={1440}
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 90vw, 1200px"
-                priority
-              />
+              <HeroImage />
             </div>
           </div>
         </AnimatedGroup>

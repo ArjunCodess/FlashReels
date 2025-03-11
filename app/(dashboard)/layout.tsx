@@ -21,7 +21,7 @@ export default async function DashboardLayout({
   }
 
   return (
-    <section className="max-w-7xl mx-auto py-2">
+    <section className="max-w-7xl mx-auto pt-2 pb-4">
       <div className="flex md:min-h-[calc(100vh-120px)]">
         <div className="hidden md:block bg-background w-72 border rounded-md">
           <SideNavigation />
