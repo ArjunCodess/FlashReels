@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import axios from "axios";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,13 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronUp, Pencil, Loader2 } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  Pencil,
+  Loader2,
+  ArrowLeft,
+} from "lucide-react";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -59,6 +65,7 @@ interface VideoDetails {
 }
 
 export default function VideoPage() {
+  const router = useRouter();
   const { videoId } = useParams();
   const [video, setVideo] = useState<VideoDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -235,6 +242,10 @@ export default function VideoPage() {
     setWorkflowStatus("starting");
   };
 
+  const handleBack = () => {
+    router.back();
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -254,7 +265,15 @@ export default function VideoPage() {
   }
 
   return (
-    <div className="container mx-auto py-8 px-4 border rounded-md my-4">
+    <div className="container mx-auto py-5 px-4 border rounded-md my-4">
+      <Button
+        variant="outline"
+        onClick={handleBack}
+        className="mb-4 flex items-center gap-2 w-fit"
+      >
+        <ArrowLeft size={16} />
+        Back
+      </Button>
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
         {/* Left Column - Video Player */}
         <RemotionVideoPlayer video={video} />
@@ -299,11 +318,7 @@ export default function VideoPage() {
               </div>
 
               <div className="flex justify-end gap-2">
-                <Button
-                  size="sm"
-                  onClick={handleSave}
-                  disabled={isSaving}
-                >
+                <Button size="sm" onClick={handleSave} disabled={isSaving}>
                   Save
                 </Button>
                 <Button
