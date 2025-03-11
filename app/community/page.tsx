@@ -62,8 +62,8 @@ export default function CommunityPage() {
       setLoading(true);
       setError(null);
       
-      // Get all videos from the API
-      const response = await axios.get('/api/videos', {
+      // Get community videos from the dedicated API
+      const response = await axios.get('/api/community', {
         params: {
           _t: new Date().getTime() // Add timestamp to prevent caching
         },
@@ -77,13 +77,8 @@ export default function CommunityPage() {
       // Process the videos to ensure they have all required fields
       const processedVideos = response.data.map(processVideoData);
       
-      // Sort videos by createdAt in descending order (newest first)
-      const sortedVideos = [...processedVideos].sort((a, b) => 
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
-      
-      setVideoList(sortedVideos);
-      setFilteredVideos(sortedVideos);
+      setVideoList(processedVideos);
+      setFilteredVideos(processedVideos);
       setCurrentPage(1); // Reset to first page when new data is loaded
     } catch (err) {
       console.error('Error fetching videos:', err);
