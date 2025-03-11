@@ -45,7 +45,7 @@ export default function VideoGrid({
       <Card className="border-2 border-dashed rounded-3xl">
         <CardContent className="flex flex-col items-center justify-center min-h-[300px] text-center p-6">
           <p className="text-lg text-neutral-500 mb-4">
-            You don&apos;t have any short video created
+            No videos found
           </p>
           <Button className="rounded-full">
             <Link href="create-new">Create New</Link>
