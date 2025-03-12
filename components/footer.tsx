@@ -3,11 +3,11 @@ import Link from "next/link";
 
 const links = [
   {
-    title: "Dashboard",
+    title: "Go To Your Dashboard",
     href: "/dashboard",
   },
   {
-    title: "Create a Reel",
+    title: "Create A Reel", 
     href: "/create-new",
   },
   {
@@ -15,7 +15,7 @@ const links = [
     href: "/favourites",
   },
   {
-    title: "Community",
+    title: "Visit The Community",
     href: "/community",
   },
 ];

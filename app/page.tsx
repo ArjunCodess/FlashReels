@@ -1,6 +1,6 @@
 import React from "react";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Cpu, Settings2, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TextEffect } from "@/components/ui/text-effect";
 import { AnimatedGroup } from "@/components/ui/animated-group";
@@ -69,7 +69,7 @@ export default function Home() {
                 },
                 ...transitionVariants,
               }}
-              className="mt-6 sm:mt-10 flex flex-row items-center justify-center gap-4 px-4"
+              className="mt-6 sm:mt-10 flex flex-col sm:flex-row justify-center gap-3 sm:gap-4"
             >
               <Button
                 asChild
@@ -119,6 +119,99 @@ export default function Home() {
           </div>
         </AnimatedGroup>
       </section>
+
+      <hr className="mb-12 sm:mb-16 md:mb-20 mt-4 sm:mt-8 md:mt-12" />
+
+      <section className="mb-8 sm:mb-12 md:mb-16 lg:mb-20">
+        <div className="mx-auto max-w-5xl space-y-6 sm:space-y-8 px-4 sm:px-6 md:space-y-12 lg:space-y-16">
+          <div className="relative z-10 mx-auto max-w-xl space-y-4 sm:space-y-6 text-center">
+            <h2 className="text-balance text-3xl sm:text-4xl font-medium lg:text-5xl">
+              Everything you need to create viral reels
+            </h2>
+            <p className="text-sm sm:text-base text-muted-foreground px-4 sm:px-0">
+              Our platform combines powerful features to help you create, edit,
+              and share engaging video content that stands out on social media.
+            </p>
+          </div>
+
+          <div className="relative mx-auto grid max-w-4xl grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-0 overflow-hidden border rounded-2xl">
+            <div className="space-y-3 p-6 sm:p-8 lg:p-12 border">
+              <div className="flex items-center gap-2">
+                <Zap className="size-4" />
+                <h3 className="text-sm font-medium">Lightning Fast</h3>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Create professional reels in minutes, not hours, with our
+                streamlined editing tools.
+              </p>
+            </div>
+            <div className="space-y-3 p-6 sm:p-8 lg:p-12 border">
+              <div className="flex items-center gap-2">
+                <Cpu className="size-4" />
+                <h3 className="text-sm font-medium">AI-Powered</h3>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Smart automation and AI assistance to enhance your creative
+                workflow.
+              </p>
+            </div>
+            <div className="space-y-3 p-6 sm:p-8 lg:p-12 border">
+              <div className="flex items-center gap-2">
+                <Settings2 className="size-4" />
+                <h3 className="text-sm font-medium">Full Control</h3>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Fine-tune every aspect of your content with precise controls and
+                customizable settings.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <hr className="mb-8 sm:mb-12 md:mb-16 lg:mb-20" />
+
+      <section className="px-4 sm:px-6">
+        <div className="mx-auto max-w-5xl rounded-2xl sm:rounded-3xl border py-8 sm:py-12 md:py-16 lg:py-24">
+          <div className="text-center px-4 sm:px-6">
+            <h2 className="text-balance text-3xl sm:text-4xl font-semibold lg:text-5xl">
+              Ready to Create Amazing Reels?
+            </h2>
+            <p className="mt-3 sm:mt-4 text-sm sm:text-base text-muted-foreground">
+              Join creators who are already making viral content with Flash
+              Reels
+            </p>
+
+            <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
+              <Button
+                asChild
+                size="lg"
+                className="rounded-xl sm:text-base w-full sm:w-auto"
+              >
+                <Link href="/create-new">
+                  <span className="flex items-center">
+                    Create Your First AI Reel
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </span>
+                </Link>
+              </Button>
+
+              <Button
+                asChild
+                size="lg"
+                variant="outline"
+                className="rounded-xl sm:text-base w-full sm:w-auto"
+              >
+                <Link href="/community">
+                  <span>Watch Examples</span>
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <hr className="my-8 sm:my-12 md:my-16 lg:my-20" />
     </main>
   );
 }
