@@ -86,7 +86,7 @@ export async function GET() {
 
         const userId = dbUser[0].id;
 
-        // First, get all videos
+        // Get only videos created by the current user
         const videos = await db
             .select({
                 id: Videos.id,
@@ -96,7 +96,8 @@ export async function GET() {
                 createdAt: Videos.createdAt,
                 status: Videos.status,
             })
-            .from(Videos);
+            .from(Videos)
+            .where(eq(Videos.createdBy, userId));
 
         // Then, get all favorites for this user
         const favorites = await db
