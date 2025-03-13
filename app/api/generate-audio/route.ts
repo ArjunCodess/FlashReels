@@ -1,6 +1,4 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
 import cloudinary from '@/lib/cloudinary';
 import { MsEdgeTTS, OUTPUT_FORMAT } from 'msedge-tts';
 
@@ -53,36 +51,24 @@ export async function POST(request: Request) {
     
     const audioBuffer = Buffer.concat(chunks);
 
-    // Ensure audio directory exists
-    const audioDir = path.join(process.cwd(), 'audio');
-    if (!fs.existsSync(audioDir)) {
-      fs.mkdirSync(audioDir, { recursive: true });
-    }
-
     // Generate a unique filename using timestamp
     const fileName = `audio_${Date.now()}.mp3`;
-    const filePath = path.join(audioDir, fileName);
-    fs.writeFileSync(filePath, audioBuffer);
 
     try {
-      // Upload to Cloudinary in the flash-reels folder
+      // Upload to Cloudinary directly from buffer (without saving to filesystem)
       const uploadResult = await new Promise<CloudinaryUploadResult>((resolve, reject) => {
-        cloudinary.uploader.upload(
-          filePath,
+        cloudinary.uploader.upload_stream(
           {
             resource_type: 'auto',
             folder: 'flash-reels',
-            public_id: path.parse(fileName).name, 
+            public_id: fileName.replace('.mp3', ''),
           },
           (error, result) => {
             if (error) reject(error);
             else resolve(result as CloudinaryUploadResult);
           }
-        );
+        ).end(audioBuffer);
       });
-
-      // Delete local file after successful upload
-      fs.unlinkSync(filePath);
 
       return NextResponse.json({ 
         success: true, 
@@ -91,8 +77,7 @@ export async function POST(request: Request) {
       });
 
     } catch (uploadError) {
-      // Delete local file if upload fails
-      fs.unlinkSync(filePath);
+      console.error('Error uploading to Cloudinary:', uploadError);
       throw uploadError;
     }
 
